@@ -1,0 +1,81 @@
+src/
+├── api/
+│   ├── axios.js
+│   ├── authApi.js
+│   ├── studentApi.js
+│   ├── teacherApi.js
+│   ├── classApi.js
+│   └── attendanceApi.js
+│
+├── app/
+│   └── router.jsx
+│
+├── components/
+│   ├── common/
+│   │   ├── AppButton.jsx
+│   │   ├── AppInput.jsx
+│   │   ├── AppSelect.jsx
+│   │   ├── AppTable.jsx
+│   │   ├── AppModal.jsx
+│   │   ├── AppCard.jsx
+│   │   ├── AppBadge.jsx
+│   │   └── Loader.jsx
+│   │
+│   ├── layout/
+│   │   ├── Sidebar.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── AppLayout.jsx
+│   │   └── AuthLayout.jsx
+│   │
+│   └── guards/
+│       ├── ProtectedRoute.jsx
+│       └── RoleRoute.jsx
+│
+├── config/
+│   └── menu.js
+│
+├── context/
+│   └── AuthContext.jsx
+│
+├── pages/
+│   ├── auth/
+│   │   └── LoginPage.jsx
+│   │
+│   ├── dashboard/
+│   │   └── DashboardPage.jsx
+│   │
+│   ├── students/
+│   │   ├── StudentsPage.jsx
+│   │   ├── StudentCreatePage.jsx
+│   │   ├── StudentEditPage.jsx
+│   │   └── StudentDetailPage.jsx
+│   │
+│   ├── teachers/
+│   │   ├── TeachersPage.jsx
+│   │   ├── TeacherCreatePage.jsx
+│   │   ├── TeacherEditPage.jsx
+│   │   └── TeacherDetailPage.jsx
+│   │
+│   ├── classes/
+│   │   ├── ClassesPage.jsx
+│   │   ├── ClassCreatePage.jsx
+│   │   ├── ClassEditPage.jsx
+│   │   ├── ClassDetailPage.jsx
+│   │   └── AssignStudentsPage.jsx
+│   │
+│   ├── attendance/
+│   │   ├── AttendancePage.jsx
+│   │   └── AttendanceByClassPage.jsx
+│   │
+│   ├── unauthorized/
+│   │   └── UnauthorizedPage.jsx
+│   │
+│   └── not-found/
+│       └── NotFoundPage.jsx
+│
+├── utils/
+│   └── permissions.js
+│
+├── App.jsx
+├── main.jsx
+└── index.css
