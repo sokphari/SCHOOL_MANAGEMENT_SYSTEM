@@ -3,6 +3,8 @@ import { getDashboard } from "../../api/dashboardApi";
 import { useAuth } from "../../context/AuthContext";
 import StatCard from "../../components/common/StatCard";
 import NotificationBell from "../../components/common/NotificationBell";
+import GenderChart from "../../components/charts/GenderChart";
+import RequestChart from "../../components/charts/RequestChart";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -68,6 +70,12 @@ export default function DashboardPage() {
               title="Today Attendance"
               value={data.today_attendance || 0}
             />
+            <GenderChart
+              male={data.male_students || 0}
+              female={data.female_students || 0}
+            />
+
+            <RequestChart stats={data.request_stats || {}} />
           </div>
         </>
       )}

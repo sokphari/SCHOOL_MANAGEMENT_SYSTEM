@@ -10,6 +10,8 @@ export default function SettingsPage() {
     school_email: "",
     school_address: "",
     telegram_chat_id: "",
+    logo_url: "",
+    banner_url: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,8 @@ export default function SettingsPage() {
         school_email: res.data.school_email || "",
         school_address: res.data.school_address || "",
         telegram_chat_id: res.data.telegram_chat_id || "",
+        logo_url: res.data.logo_url || "",
+        banner_url: res.data.banner_url || "",
       });
     } catch (e) {
       console.error(e);
@@ -123,6 +127,22 @@ export default function SettingsPage() {
           value={form.telegram_chat_id}
           onChange={handleChange}
           error={errors.telegram_chat_id?.[0]}
+        />
+
+        <AppInput
+          label="Logo URL"
+          name="logo_url"
+          value={form.logo_url}
+          onChange={handleChange}
+          error={errors.logo_url?.[0]}
+        />
+
+        <AppInput
+          label="Banner URL"
+          name="banner_url"
+          value={form.banner_url}
+          onChange={handleChange}
+          error={errors.banner_url?.[0]}
         />
 
         <AppButton type="submit">

@@ -19,12 +19,14 @@ import StudentRequestScanPage from "../pages/public/StudentRequestScanPage";
 import StudentRequestsPage from "../pages/requests/StudentRequestsPage";
 import StudentRequestDetailPage from "../pages/requests/StudentRequestsDetailPage";
 import SettingsPage from "../pages/settings/SettingsPage";
+import HomePage from "../pages/public/HomePage";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <StudentRequestScanPage />,
+    element: <HomePage />,
   },
+
   {
     path: "/request-scan",
     element: <StudentRequestScanPage />,
