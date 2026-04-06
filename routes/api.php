@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\TeacherController;
 use App\Services\TelegramService;
 use Illuminate\Support\Facades\Route;
 
+//route public 
+Route::get('/public/settings',[SettingController::class,'publicInfo']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');;
 
 Route::middleware('auth:sanctum')->group(function () {

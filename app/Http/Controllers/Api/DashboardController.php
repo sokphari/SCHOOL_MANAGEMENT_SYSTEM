@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\SchoolClass;
+use App\Models\StudentRequest;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +27,13 @@ class DashboardController extends Controller
 
                 'male_students' => Student::where('gender', 'male')->count(),
                 'female_students' => Student::where('gender', 'female')->count(),
+
+                'request_stats' => [
+                    'pending' => StudentRequest::where('status', 'pending')->count(),
+                    'in_progress' => StudentRequest::where('status', 'in_progress')->count(),
+                    'resolved' => StudentRequest::where('status', 'resolved')->count(),
+                    'rejected' => StudentRequest::where('status', 'rejected')->count(),
+                ],
             ]);
         }
 
@@ -62,6 +70,13 @@ class DashboardController extends Controller
                 'female_students' => Student::whereIn('id', $studentIds)
                     ->where('gender', 'female')
                     ->count(),
+
+                'request_stats' => [
+                    'pending' => StudentRequest::where('status', 'pending')->count(),
+                    'in_progress' => StudentRequest::where('status', 'in_progress')->count(),
+                    'resolved' => StudentRequest::where('status', 'resolved')->count(),
+                    'rejected' => StudentRequest::where('status', 'rejected')->count(),
+                ],
             ]);
         }
 
