@@ -40,7 +40,7 @@ export default function StudentEditPage() {
     try {
       await updateStudent(id, form);
       alert("Student updated");
-      navigate("/students");
+      navigate("/admin/students");
     } catch (e) {
       alert("Update failed");
     }

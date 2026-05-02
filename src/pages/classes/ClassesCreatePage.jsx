@@ -61,7 +61,7 @@ export default function ClassCreatePage() {
       });
 
       alert("Class created successfully");
-      navigate("/classes");
+      navigate("/admin/classes");
     } catch (e) {
       alert("Failed to create class");
     } finally {

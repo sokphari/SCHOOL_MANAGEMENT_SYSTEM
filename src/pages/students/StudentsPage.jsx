@@ -59,7 +59,7 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure?")) return;
+    if (!confirm("Are you sure you want to delete this student?")) return;
 
     try {
       await deleteStudent(id);
@@ -129,6 +129,24 @@ export default function StudentsPage() {
     {
       key: "gender",
       title: "Gender",
+      render: (row) => (
+        <span
+          style={{
+            padding: "4px 12px",
+            borderRadius: "20px",
+            background: row.gender === "male" ? "#dbeafe" : "#fce7f3",
+            color: row.gender === "male" ? "#0369a1" : "#be185d",
+            fontSize: "12px",
+            fontWeight: "600",
+          }}
+        >
+          <i
+            className={row.gender === "male" ? "fas fa-person" : "fas fa-person-dress"}
+            style={{ marginRight: "6px" }}
+          />
+          {row.gender}
+        </span>
+      ),
     },
     {
       key: "phone",
@@ -137,30 +155,361 @@ export default function StudentsPage() {
     {
       key: "status",
       title: "Status",
+      render: (row) => (
+        <span
+          style={{
+            padding: "4px 12px",
+            borderRadius: "20px",
+            background: row.status === "active" ? "#dcfce7" : "#fee2e2",
+            color: row.status === "active" ? "#15803d" : "#991b1b",
+            fontSize: "12px",
+            fontWeight: "600",
+          }}
+        >
+          <i
+            className={row.status === "active" ? "fas fa-check-circle" : "fas fa-times-circle"}
+            style={{ marginRight: "6px" }}
+          />
+          {row.status}
+        </span>
+      ),
     },
     {
       key: "actions",
       title: "Actions",
       render: (row) => (
-        <>
-          <AppButton onClick={() => handleShowQr(row)}>QR</AppButton>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => handleShowQr(row)}
+            style={{
+              padding: "6px 12px",
+              background: "#0d5c42",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#054e36";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(13, 92, 66, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#0d5c42";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            title="View QR Code"
+          >
+            <i className="fas fa-qrcode" style={{ marginRight: "4px" }} />
+            QR
+          </button>
 
           {user?.role === "admin" && (
             <>
-              <AppButton onClick={() => navigate(`/students/${row.id}/edit`)}>
+              <button
+                onClick={() => navigate(`/admin/students/${row.id}/edit`)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#1d4ed8";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#2563eb";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                title="Edit Student"
+              >
+                <i className="fas fa-edit" style={{ marginRight: "4px" }} />
                 Edit
-              </AppButton>
+              </button>
 
-              <AppButton onClick={() => handleDelete(row.id)}>Delete</AppButton>
+              <button
+                onClick={() => handleDelete(row.id)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#dc2626",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#b91c1c";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#dc2626";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                title="Delete Student"
+              >
+                <i className="fas fa-trash" style={{ marginRight: "4px" }} />
+                Delete
+              </button>
             </>
           )}
-        </>
+        </div>
       ),
     },
   ];
 
   return (
-    <div>
+    <div style={{ animation: "fadeIn 0.3s ease" }}>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "32px",
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "28px",
+              fontWeight: 600,
+              color: "#1f2937",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <i className="fas fa-users" style={{ color: "#0d5c42" }} />
+            Students Management
+          </h1>
+          <p style={{ margin: "8px 0 0 0", color: "#6b7280", fontSize: "14px" }}>
+            Manage all students in the system
+          </p>
+        </div>
+
+        {user?.role === "admin" && (
+          <button
+            onClick={() => navigate("/admin/students/create")}
+            style={{
+              padding: "12px 20px",
+              background: "#25d366",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#1da851";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 211, 102, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#25d366";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <i className="fas fa-plus" />
+            Add Student
+          </button>
+        )}
+      </div>
+
+      {/* Filters Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "20px",
+          marginBottom: "24px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 16px 0",
+            fontSize: "16px",
+            fontWeight: "600",
+            color: "#1f2937",
+          }}
+        >
+          <i className="fas fa-filter" style={{ marginRight: "8px" }} />
+          Filters
+        </h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "16px",
+            marginBottom: "16px",
+          }}
+        >
+          <AppInput
+            label="Search"
+            name="search"
+            value={filters.search}
+            onChange={handleFilterChange}
+            placeholder="Search by code, name, phone, email..."
+          />
+
+          <AppSelect
+            label="Status"
+            name="status"
+            value={filters.status}
+            onChange={handleFilterChange}
+            options={[
+              { label: "All Status", value: "" },
+              { label: "Active", value: "active" },
+              { label: "Inactive", value: "inactive" },
+            ]}
+          />
+
+          <AppSelect
+            label="Gender"
+            name="gender"
+            value={filters.gender}
+            onChange={handleFilterChange}
+            options={[
+              { label: "All Gender", value: "" },
+              { label: "Male", value: "male" },
+              { label: "Female", value: "female" },
+            ]}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={handleSearch}
+            style={{
+              padding: "10px 20px",
+              background: "#0d5c42",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#054e36";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#0d5c42";
+            }}
+          >
+            <i className="fas fa-search" />
+            Search
+          </button>
+
+          <button
+            onClick={handleReset}
+            style={{
+              padding: "10px 20px",
+              background: "#e5e7eb",
+              color: "#1f2937",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#d1d5db";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#e5e7eb";
+            }}
+          >
+            <i className="fas fa-redo" />
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "20px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        }}
+      >
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <i
+              className="fas fa-spinner fa-spin"
+              style={{ fontSize: "32px", color: "#0d5c42", marginBottom: "16px" }}
+            />
+            <p style={{ color: "#6b7280", marginTop: "16px" }}>Loading students...</p>
+          </div>
+        ) : students.length > 0 ? (
+          <>
+            <AppTable columns={columns} data={students} />
+
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "12px 0",
+                borderTop: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+                <i className="fas fa-database" style={{ marginRight: "8px" }} />
+                Total: <strong>{pagination.total}</strong> students
+              </p>
+
+              <AppPagination
+                currentPage={pagination.current_page}
+                lastPage={pagination.last_page}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <i
+              className="fas fa-inbox"
+              style={{ fontSize: "48px", color: "#d1d5db", marginBottom: "16px" }}
+            />
+            <p style={{ color: "#6b7280", fontSize: "16px", margin: 0 }}>
+              No students found
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* QR Modal */}
       <AppModal open={qrOpen} onClose={() => setQrOpen(false)}>
         {selectedStudent && (
           <StudentQrCard
@@ -169,83 +518,19 @@ export default function StudentsPage() {
           />
         )}
       </AppModal>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
-        <h2>Students</h2>
 
-        {user?.role === "admin" && (
-          <AppButton onClick={() => navigate("/students/create")}>
-            Add Student
-          </AppButton>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr auto auto",
-          gap: "12px",
-          marginBottom: "20px",
-          alignItems: "end",
-        }}
-      >
-        <AppInput
-          label="Search"
-          name="search"
-          value={filters.search}
-          onChange={handleFilterChange}
-          placeholder="Search by code, name, phone, email"
-        />
-
-        <AppSelect
-          label="Status"
-          name="status"
-          value={filters.status}
-          onChange={handleFilterChange}
-          options={[
-            { label: "Active", value: "active" },
-            { label: "Inactive", value: "inactive" },
-          ]}
-        />
-
-        <AppSelect
-          label="Gender"
-          name="gender"
-          value={filters.gender}
-          onChange={handleFilterChange}
-          options={[
-            { label: "Male", value: "male" },
-            { label: "Female", value: "female" },
-          ]}
-        />
-
-        <AppButton onClick={handleSearch}>Search</AppButton>
-        <AppButton onClick={handleReset}>Reset</AppButton>
-      </div>
-
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          <AppTable columns={columns} data={students} />
-
-          <p style={{ marginTop: "12px", color: "#6b7280" }}>
-            Total: {pagination.total}
-          </p>
-
-          <AppPagination
-            currentPage={pagination.current_page}
-            lastPage={pagination.last_page}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

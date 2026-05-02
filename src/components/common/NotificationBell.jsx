@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { getPendingRequestCount } from "../../api/studentRequestsApi";
 
 export default function NotificationBell() {
@@ -33,7 +35,7 @@ export default function NotificationBell() {
         fontSize: "20px",
       }}
     >
-      🔔
+      <FontAwesomeIcon icon={faBell} style={{ color: "#6b7280" }} />
 
       {count > 0 && (
         <span

@@ -68,7 +68,7 @@ export default function ClassEditPage() {
       });
 
       alert("Class updated");
-      navigate("/classes");
+      navigate("/admin/classes");
     } catch (e) {
       alert("Update failed");
     }

@@ -48,7 +48,7 @@ export default function ClassesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure?")) return;
+    if (!confirm("Are you sure you want to delete this class?")) return;
 
     try {
       await deleteClass(id);
@@ -102,112 +102,417 @@ export default function ClassesPage() {
 
   const columns = [
     { key: "id", title: "ID" },
-    { key: "name", title: "Class Name" },
-    { key: "section", title: "Section" },
+    {
+      key: "name",
+      title: "Class Name",
+      render: (row) => (
+        <span style={{ fontWeight: "600", color: "#1f2937" }}>
+          {row.name}
+        </span>
+      ),
+    },
+    {
+      key: "section",
+      title: "Section",
+      render: (row) => (
+        <span
+          style={{
+            padding: "4px 12px",
+            background: "#f3f4f6",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: "600",
+            color: "#6b7280",
+          }}
+        >
+          {row.section || "-"}
+        </span>
+      ),
+    },
     { key: "academic_year", title: "Year" },
-    { key: "room", title: "Room" },
+    {
+      key: "room",
+      title: "Room",
+      render: (row) => (
+        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <i className="fas fa-door-open" style={{ color: "#0d5c42" }} />
+          {row.room || "-"}
+        </span>
+      ),
+    },
     {
       key: "teacher",
       title: "Teacher",
       render: (row) =>
-        row.teacher
-          ? `${row.teacher.first_name} ${row.teacher.last_name}`
-          : "-",
+        row.teacher ? (
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-chalkboard-user" style={{ color: "#2563eb" }} />
+            {row.teacher.first_name} {row.teacher.last_name}
+          </span>
+        ) : (
+          <span style={{ color: "#d1d5db", fontStyle: "italic" }}>
+            <i className="fas fa-minus" style={{ marginRight: "6px" }} />
+            Unassigned
+          </span>
+        ),
     },
-    { key: "status", title: "Status" },
+    {
+      key: "status",
+      title: "Status",
+      render: (row) => (
+        <span
+          style={{
+            padding: "4px 12px",
+            borderRadius: "20px",
+            background: row.status === "active" ? "#dcfce7" : "#fee2e2",
+            color: row.status === "active" ? "#15803d" : "#991b1b",
+            fontSize: "12px",
+            fontWeight: "600",
+          }}
+        >
+          <i
+            className={row.status === "active" ? "fas fa-check-circle" : "fas fa-times-circle"}
+            style={{ marginRight: "6px" }}
+          />
+          {row.status}
+        </span>
+      ),
+    },
     {
       key: "actions",
       title: "Actions",
       render: (row) => (
-        <>
-          <AppButton onClick={() => navigate(`/classes/${row.id}`)}>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => navigate(`/admin/classes/${row.id}`)}
+            style={{
+              padding: "6px 12px",
+              background: "#0d5c42",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#054e36";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(13, 92, 66, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#0d5c42";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            title="View Details"
+          >
+            <i className="fas fa-eye" style={{ marginRight: "4px" }} />
             View
-          </AppButton>
+          </button>
 
           {user?.role === "admin" && (
             <>
-              <AppButton onClick={() => navigate(`/classes/${row.id}/edit`)}>
+              <button
+                onClick={() => navigate(`/admin/classes/${row.id}/edit`)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#1d4ed8";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#2563eb";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                title="Edit Class"
+              >
+                <i className="fas fa-edit" style={{ marginRight: "4px" }} />
                 Edit
-              </AppButton>
+              </button>
 
-              <AppButton onClick={() => handleDelete(row.id)}>
+              <button
+                onClick={() => handleDelete(row.id)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#dc2626",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#b91c1c";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#dc2626";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                title="Delete Class"
+              >
+                <i className="fas fa-trash" style={{ marginRight: "4px" }} />
                 Delete
-              </AppButton>
+              </button>
             </>
           )}
-        </>
+        </div>
       ),
     },
   ];
 
   return (
-    <div>
+    <div style={{ animation: "fadeIn 0.3s ease" }}>
+      {/* Header */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "16px",
+          marginBottom: "32px",
         }}
       >
-        <h2>Classes</h2>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "28px",
+              fontWeight: 600,
+              color: "#1f2937",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <i className="fas fa-book" style={{ color: "#0d5c42" }} />
+            Classes Management
+          </h1>
+          <p style={{ margin: "8px 0 0 0", color: "#6b7280", fontSize: "14px" }}>
+            Manage all classes and assign teachers
+          </p>
+        </div>
 
         {user?.role === "admin" && (
-          <AppButton onClick={() => navigate("/classes/create")}>
+          <button
+            onClick={() => navigate("/admin/classes/create")}
+            style={{
+              padding: "12px 20px",
+              background: "#25d366",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#1da851";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 211, 102, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#25d366";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <i className="fas fa-plus" />
             Add Class
-          </AppButton>
+          </button>
         )}
       </div>
 
+      {/* Filters Section */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr auto auto",
-          gap: "12px",
-          marginBottom: "20px",
-          alignItems: "end",
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "20px",
+          marginBottom: "24px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
         }}
       >
-        <AppInput
-          label="Search"
-          name="search"
-          value={filters.search}
-          onChange={handleFilterChange}
-          placeholder="Search by class name, section, year, room"
-        />
+        <h3
+          style={{
+            margin: "0 0 16px 0",
+            fontSize: "16px",
+            fontWeight: "600",
+            color: "#1f2937",
+          }}
+        >
+          <i className="fas fa-filter" style={{ marginRight: "8px" }} />
+          Filters
+        </h3>
 
-        <AppSelect
-          label="Status"
-          name="status"
-          value={filters.status}
-          onChange={handleFilterChange}
-          options={[
-            { label: "Active", value: "active" },
-            { label: "Inactive", value: "inactive" },
-          ]}
-        />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "16px",
+            marginBottom: "16px",
+          }}
+        >
+          <AppInput
+            label="Search"
+            name="search"
+            value={filters.search}
+            onChange={handleFilterChange}
+            placeholder="Search by class name, section, year, room..."
+          />
 
-        <AppButton onClick={handleSearch}>Search</AppButton>
-        <AppButton onClick={handleReset}>Reset</AppButton>
+          <AppSelect
+            label="Status"
+            name="status"
+            value={filters.status}
+            onChange={handleFilterChange}
+            options={[
+              { label: "All Status", value: "" },
+              { label: "Active", value: "active" },
+              { label: "Inactive", value: "inactive" },
+            ]}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={handleSearch}
+            style={{
+              padding: "10px 20px",
+              background: "#0d5c42",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#054e36";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#0d5c42";
+            }}
+          >
+            <i className="fas fa-search" />
+            Search
+          </button>
+
+          <button
+            onClick={handleReset}
+            style={{
+              padding: "10px 20px",
+              background: "#e5e7eb",
+              color: "#1f2937",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#d1d5db";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#e5e7eb";
+            }}
+          >
+            <i className="fas fa-redo" />
+            Reset
+          </button>
+        </div>
       </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          <AppTable columns={columns} data={classes} />
+      {/* Table Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "20px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        }}
+      >
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <i
+              className="fas fa-spinner fa-spin"
+              style={{ fontSize: "32px", color: "#0d5c42", marginBottom: "16px" }}
+            />
+            <p style={{ color: "#6b7280", marginTop: "16px" }}>Loading classes...</p>
+          </div>
+        ) : classes.length > 0 ? (
+          <>
+            <AppTable columns={columns} data={classes} />
 
-          <p style={{ marginTop: "12px", color: "#6b7280" }}>
-            Total: {pagination.total}
-          </p>
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "12px 0",
+                borderTop: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+                <i className="fas fa-database" style={{ marginRight: "8px" }} />
+                Total: <strong>{pagination.total}</strong> classes
+              </p>
 
-          <AppPagination
-            currentPage={pagination.current_page}
-            lastPage={pagination.last_page}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
+              <AppPagination
+                currentPage={pagination.current_page}
+                lastPage={pagination.last_page}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <i
+              className="fas fa-inbox"
+              style={{ fontSize: "48px", color: "#d1d5db", marginBottom: "16px" }}
+            />
+            <p style={{ color: "#6b7280", fontSize: "16px", margin: 0 }}>
+              No classes found
+            </p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

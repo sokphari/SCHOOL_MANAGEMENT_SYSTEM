@@ -41,7 +41,7 @@ export default function StudentCreatePage() {
     try {
       await createStudent(form);
       alert("Student created successfully");
-      navigate("/students");
+      navigate("/admin/students");
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
