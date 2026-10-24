@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Modules\Attendance\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreAttendanceRequest;
+use App\Http\Controllers\Modules\Attendance\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
 
@@ -12,18 +12,24 @@ class AttendanceController extends Controller
     public function index()
     {
         $user = auth()->user();
+        $query = Attendance::with(['student', 'schoolClass', 'marker']);
 
         if ($user->role === 'teacher') {
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
 
-            if (!$teacher || $class->teacher_id !== $teacher->id) {
+            if (!$teacher) {
                 return response()->json([
-                    'message' => 'Unauthorized'
-                ], 403);
+                    'message' => 'Teacher profile is not linked to this user.'
+                ], 404);
             }
+
+            $classIds = \App\Models\SchoolClass::where('teacher_id', $teacher->id)->pluck('id');
+            $query->whereIn('school_class_id', $classIds);
         }
+
+        return response()->json($query->latest('attendance_date')->paginate(10));
     }
-    public function bulkStore(\App\Http\Requests\BulkAttendanceRequest $request, \App\Models\SchoolClass $class)
+    public function bulkStore(\App\Http\Controllers\Modules\Attendance\Requests\BulkAttendanceRequest $request, \App\Models\SchoolClass $class)
     {
         $user = auth()->user();
 

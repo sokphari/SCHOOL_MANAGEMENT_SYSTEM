@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\SchoolClassController;
+use App\Http\Controllers\Modules\Class\Controllers\SchoolClassController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {

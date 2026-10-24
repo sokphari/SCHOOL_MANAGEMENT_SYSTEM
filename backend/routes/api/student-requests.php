@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\StudentRequestController;
+use App\Http\Controllers\Modules\StudentRequest\Controllers\StudentRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/public/student-requests', [StudentRequestController::class, 'store'])->middleware('throttle:public-student-requests');

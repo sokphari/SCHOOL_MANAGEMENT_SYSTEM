@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Controllers\Modules\Teacher\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class UpdateTeacherRequest extends FormRequest
+class StoreTeacherRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,16 +13,9 @@ class UpdateTeacherRequest extends FormRequest
 
     public function rules(): array
     {
-        $teacherId = $this->route('teacher')->id;
-
         return [
             'user_id' => ['nullable', 'exists:users,id'],
-            'teacher_code' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('teachers', 'teacher_code')->ignore($teacherId),
-            ],
+            'teacher_code' => ['required', 'string', 'max:50', 'unique:teachers,teacher_code'],
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'gender' => ['nullable', 'in:male,female'],

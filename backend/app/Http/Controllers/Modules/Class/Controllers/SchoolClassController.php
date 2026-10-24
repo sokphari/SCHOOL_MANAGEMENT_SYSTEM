@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Modules\Class\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreSchoolClassRequest;
-use App\Http\Requests\UpdateSchoolClassRequest;
+use App\Http\Controllers\Modules\Class\Requests\StoreSchoolClassRequest;
+use App\Http\Controllers\Modules\Class\Requests\UpdateSchoolClassRequest;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;

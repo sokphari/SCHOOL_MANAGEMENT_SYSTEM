@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Modules\StudentRequest\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\StudentRequest;
-use App\Services\TelegramService;
+use App\Http\Controllers\Modules\StudentRequest\Services\TelegramService;
 use Illuminate\Http\Request;
 
 class StudentRequestController extends Controller

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Modules\Student\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreStudentRequest;
-use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Controllers\Modules\Student\Requests\StoreStudentRequest;
+use App\Http\Controllers\Modules\Student\Requests\UpdateStudentRequest;
 use App\Models\Student;
 use Illuminate\Http\Request;
 

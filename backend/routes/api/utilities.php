@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\TelegramService;
+use App\Http\Controllers\Modules\StudentRequest\Services\TelegramService;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/test-telegram', function (TelegramService $telegramService) {

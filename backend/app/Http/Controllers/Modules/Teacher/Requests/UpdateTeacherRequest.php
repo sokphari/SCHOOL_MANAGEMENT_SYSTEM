@@ -1,10 +1,11 @@
 <?php
-namespace App\Http\Requests;
+
+namespace App\Http\Controllers\Modules\Teacher\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateStudentRequest extends FormRequest
+class UpdateTeacherRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -13,25 +14,23 @@ class UpdateStudentRequest extends FormRequest
 
     public function rules(): array
     {
-        $studentId = $this->route('student')->id;
+        $teacherId = $this->route('teacher')->id;
 
         return [
-            'student_code' => [
+            'user_id' => ['nullable', 'exists:users,id'],
+            'teacher_code' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('students', 'student_code')->ignore($studentId),
+                Rule::unique('teachers', 'teacher_code')->ignore($teacherId),
             ],
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'gender' => ['nullable', 'in:male,female'],
-            'date_of_birth' => ['nullable', 'date'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],
-            'guardian_name' => ['nullable', 'string', 'max:255'],
-            'guardian_phone' => ['nullable', 'string', 'max:20'],
-            'enrollment_date' => ['nullable', 'date'],
+            'hire_date' => ['nullable', 'date'],
             'status' => ['nullable', 'in:active,inactive'],
         ];
     }

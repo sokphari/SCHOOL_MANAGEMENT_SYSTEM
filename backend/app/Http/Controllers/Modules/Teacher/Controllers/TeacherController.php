@@ -1,9 +1,9 @@
 <?php
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Modules\Teacher\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTeacherRequest;
-use App\Http\Requests\UpdateTeacherRequest;
+use App\Http\Controllers\Modules\Teacher\Requests\StoreTeacherRequest;
+use App\Http\Controllers\Modules\Teacher\Requests\UpdateTeacherRequest;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 
