@@ -26,11 +26,20 @@ src/
 ├── App.jsx
 └── main.jsx
 ```
-
 Feature modules can contain `api/` for endpoint calls, `pages/` for route-level
 screens, and `components/` for UI used by that feature. Add `hooks/`, `context/`,
 or `utils/` inside a module only when that feature needs them. Keep reusable,
 feature-neutral code in `shared/`.
+
+TypeScript is being adopted gradually, starting with the dashboard module. Keep
+new dashboard data contracts in `modules/dashboard/types/` and run
+`npm run typecheck` after changing typed modules. Existing JavaScript and JSX
+modules remain valid during the migration.
+
+Use Tailwind utility classes for feature and layout styling. Shared color tokens
+and light/dark theme variables live in `src/index.css`; the Vite Tailwind plugin
+scans module components for utilities. Keep standalone CSS for cases utilities
+cannot express cleanly, such as chart-library SVG details.
 
 Use the `@/` alias for imports from `src`, for example
 `@/modules/students/api/studentApi` or `@/shared/components/AppButton`. The

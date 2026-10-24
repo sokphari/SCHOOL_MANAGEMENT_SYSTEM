@@ -27,32 +27,19 @@ export default function NotificationBell() {
   }, []);
 
   return (
-    <div
+    <button
+      className="relative inline-grid size-[38px] shrink-0 place-items-center rounded-xl border border-violet-200 bg-violet-50 text-[15px] text-violet-700 shadow-sm transition hover:bg-violet-100 hover:text-violet-800 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-200 dark:hover:bg-violet-400/20 max-[560px]:size-[35px]"
+      type="button"
+      aria-label={count > 0 ? `${count} pending student requests` : "Student requests"}
       onClick={() => navigate("/admin/student-requests")}
-      style={{
-        position: "relative",
-        cursor: "pointer",
-        fontSize: "20px",
-      }}
     >
-      <FontAwesomeIcon icon={faBell} style={{ color: "#6b7280" }} />
+      <FontAwesomeIcon icon={faBell} />
 
       {count > 0 && (
-        <span
-          style={{
-            position: "absolute",
-            top: "-5px",
-            right: "-10px",
-            background: "red",
-            color: "white",
-            borderRadius: "50%",
-            padding: "2px 6px",
-            fontSize: "12px",
-          }}
-        >
+        <span className="absolute -right-1 -top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-rose-600 px-1 text-[9px] font-bold text-white">
           {count}
         </span>
       )}
-    </div>
+    </button>
   );
 }
