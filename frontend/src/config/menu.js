@@ -1,0 +1,39 @@
+const menuItems = [
+  {
+    label: "Dashboard",
+    path: "/admin/dashboard",
+    roles: ["admin", "teacher"],
+  },
+  {
+    label: "Students",
+    path: "/admin/students",
+    roles: ["admin", "teacher"],
+  },
+  {
+    label: "Teachers",
+    path: "/admin/teachers",
+    roles: ["admin"],
+  },
+  {
+    label: "Classes",
+    path: "/admin/classes",
+    roles: ["admin", "teacher"],
+  },
+  {
+    label: "Attendance",
+    path: "/admin/attendance",
+    roles: ["admin", "teacher"],
+  },
+  {
+    label: "Requests",
+    path: "/admin/student-requests",
+    roles: ["admin"],
+  },
+  {
+    label: "Settings",
+    path: "/admin/settings",
+    roles: ["admin"],
+  },
+];
+
+export default menuItems;
