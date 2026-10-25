@@ -129,6 +129,216 @@ repeating discovery work.
   Ran `docker compose exec -T frontend npm install`, restarted the frontend
   service, and confirmed `/src/index.css` now returns HTTP 200.
 
+## Follow-up — Student sidebar submenu (2026-10-25)
+
+- Changed the Students sidebar item into an expandable submenu with links to
+  View Students and Create Student. It opens automatically while viewing any
+  student route and uses a 300 ms expand/collapse transition.
+- Kept Create Student visible to admins only; both admin and teacher roles can
+  open the student list. This is navigation only and does not add a student
+  duration field.
+- Added the missing React Router `useLocation` import required by the submenu.
+
+## Follow-up — Student list UI and pagination (2026-10-25)
+
+- Refreshed the View Students screen with the Royal Purple theme, responsive
+  search/status/gender filters, a compact directory header, a horizontally
+  scrollable table, and clearer empty/loading states. Existing QR, edit, delete,
+  filtering, and role permissions remain available.
+- Student requests include `per_page` matching the frontend page size. The list
+  footer displays the visible record range and current page size.
+- Restyled shared input, select, table, and pagination components with the app's
+  theme tokens. Pagination now shows a compact page window for long lists.
+- Student filters now fetch automatically without Search or Reset buttons or a
+  page reload. Text search is debounced by 300 ms; changing status/gender applies
+  immediately and resets pagination to the first page.
+- Combined the student filters and list in one card and tightened vertical
+  spacing; shared input/select components accept an optional container class to
+  support compact layouts.
+- Removed the student list title/description/count strip and visible filter
+  labels for a more compact toolbar. Select controls now accept a placeholder,
+  showing “All statuses” and “All genders” when no filter is active.
+- Replaced the student database ID column with a sequential row number that
+  continues across paginated pages.
+- Kept Previous/Next pagination controls visible on the student list even when
+  only one page exists; the controls are disabled until additional pages exist.
+- Replaced student row action text with accessible icon buttons for View, QR,
+  Edit, and Delete. View loads the existing student detail endpoint in a
+  dedicated profile page with student contact, guardian, enrollment, and status
+  fields; role restrictions for edit/delete are unchanged.
+- Added the `/admin/students/:id` details route for both admins and teachers;
+  the profile page offers an admin-only edit action and a link back to the list.
+- Expanded the student profile page to the shared 1800px maximum content width so
+  it uses the available dashboard content area instead of a narrow centered card.
+- Expanded the Personal information section into responsive full-width detail
+  cards, with a clearer section heading and supporting description.
+- Redesigned the student edit page with the full available student, guardian,
+  and enrollment fields in responsive form sections; added API validation error
+  display, save state, and back/cancel navigation to the student's profile.
+- Tightened the edit form header, field gaps, and section padding so the complete
+  form is more likely to fit on screen without scrolling on desktop; smaller
+  screens retain natural page scrolling.
+- Redesigned Create Student to match the compact responsive edit form with
+  personal, guardian, and enrollment sections, validation feedback, and save
+  state handling.
+- Improved form readability in dark mode by increasing shared field-label size
+  and weight, strengthening input borders, and giving Create Student sections
+  and field rows clearer spacing.
+- Kept the Create Student layout compact, increased the title icon to a larger
+  accent tile, and made its Back to students button more visible with a branded
+  border and surface.
+- Tightened the Create Student page's desktop vertical footprint and used the
+  surrounding main-area padding so it fits shorter viewports more easily;
+  smaller screens preserve normal scrolling.
+- Migrated all Student feature API, pages, and QR card files from JavaScript to
+  TypeScript (`.ts`/`.tsx`). Added Student/domain, form, pagination, filter, and
+  validation-error types, and typed API response/request contracts.
+- Converted shared input, select, table, pagination, modal, and button
+  components used by the feature to TypeScript with typed props. TypeScript
+  strict checking passes across the application.
+- Fixed Vite development imports after renaming Student pages to `.tsx`: router
+  imports now name the TSX paths explicitly, and the edit route imports the edit
+  page component rather than the details page.
+- Updated every existing module import of the renamed shared `.tsx` components
+  and Student API `.ts` file, including Teacher, Class, and Student Request
+  pages, fixing Vite 404s that still requested the old `.jsx`/`.js` paths.
+- Added an auth restoration loading state to AuthContext and made protected/role
+  guards wait for `/me` before redirecting. Refreshing a valid nested route such
+  as Student View or Create now keeps the current route instead of redirecting
+  to Dashboard while the user is being restored.
+- Migrated Teacher list/create/edit pages and API to `.tsx`/`.ts`, with typed
+  teacher records, filters, pagination, form payloads, validation errors, and
+  Axios response contracts. The forms now match the shared responsive Royal
+  Purple form layout.
+- Updated the router to explicit Teacher TSX paths and corrected Teacher Add/Edit
+  navigation to `/admin/teachers/...` so the links match registered routes.
+- Updated Class Create/Edit imports of the migrated Teacher API to explicitly
+  load `teacherApi.ts`, eliminating remaining requests for the removed `.js` file.
+- Added an expandable Teachers sidebar menu with View Teachers and Create
+  Teacher links, automatic expansion on Teacher routes, and the same 300 ms
+  transition used by the Students submenu.
+- Replaced the legacy inline-styled Teacher list with a responsive Royal Purple
+  list matching Student directory UI, including automatic search/status/gender
+  filters, icon actions, empty/loading states, and 10-row pagination.
+- Added an expandable Classes sidebar menu with View Classes for Admin/Teacher
+  and Create Class for Admin, linked to the existing class list/create routes.
+- Added Card/Table view switching to the Classes list. The card layout shows
+  class ID, name, section, academic year, room, assigned teacher, status, and
+  description when present; view/edit/delete actions follow existing role access.
+- Set Classes list pagination to 8 records per page in the frontend and Laravel
+  endpoint for both card and table views.
+- Redesigned Create Class to match the compact Royal Purple create forms, with
+  grouped class/teaching details, optional teacher assignment, responsive
+  fields, API validation messages, save state, and back/cancel navigation.
+- Redesigned Class Details / students-in-class page with a class summary,
+  student count, assignment controls, responsive student table, and empty/loading
+  states while retaining the existing assign/remove behavior.
+- Styled Student Code as a brand badge and Male/Female values as distinct color
+  badges in the students-in-class table.
+- Added View, Admin-only Edit, and Remove from class actions to the class roster.
+  Student details now include real attendance counts/rate and enrolled class
+  data; score and schedule time display explicit not-configured placeholders
+  because no score/timetable fields or modules exist yet. The student detail API
+  now includes attendance counts without changing the Student model.
+- Added an authenticated paginated student attendance-history endpoint and a
+  Student Details attendance table showing date, class, status, and note, with
+  10 records per page.
+- Updated View Students to display 15 records per page in both the React list
+  and Laravel student endpoint; row numbering and pagination follow the new size.
+- Redesigned Edit Class to match the compact Royal Purple Create Class form, with
+  grouped fields, teacher/status selection, inline API validation, save state,
+  and back/cancel navigation to class details. Tightened vertical spacing to
+  keep the edit form compact on desktop.
+- Migrated the Classes module API and its list/create/edit/details pages from
+  JavaScript to TypeScript (`classApi.ts`, typed `.tsx` pages) and added shared
+  class, form, pagination, roster, and validation types. Updated router imports
+  to the TypeScript pages, and restored the requested 8 classes per page.
+- Changed all remaining Classes API imports, including Attendance, to explicitly
+  reference `classApi.ts` so Vite does not request the removed `classApi.js` path.
+- Added compact badges for class name, section, and assigned teacher in both
+  Class table and card views; class/section/teacher use distinct theme colors.
+- Increased Section badge contrast with a stronger emerald background, border,
+  and text color for both light and dark modes.
+- Added enrolled-student totals to Class cards using Laravel's `students_count`
+  aggregate, so the card shows live relationship counts instead of placeholder
+  values.
+- Replaced the student selector/Add Student controls on Class Details with a
+  Track Attendance button; roster removal remains available.
+- Replaced the per-student attendance status dropdown with four selectable
+  buttons: Present, Absent, Permission, and Late. Permission maps to the
+  backend's existing `excused` status so the API contract remains compatible.
+- Added an Attendance column to each student row on Class Details, with the same
+  four status buttons. It loads today's saved status and stages changes before
+  submitting them through the existing class/date attendance API.
+- Defaulted unmarked student rows to Present in the Attendance column and
+  enlarged the four status buttons with consistent widths and touch-friendly
+  height for easier reading and selection.
+- Made Class Details require an explicit Track Attendance click before status
+  buttons are enabled. Unmarked students default to Present; a separate Save
+  Attendance action submits the entire class roster for the current day. After
+  saving, editing locks and the action changes to Edit Attendance; reopening it
+  allows admin changes that must be saved again. Teachers see “Tracked already”
+  after submission, and the attendance API rejects a second teacher submission
+  for the same class and date.
+- Permission/`excused` can be recorded by Admin or Teacher for a student's
+  in-person request. Teachers are limited to one permission for each student
+  per Monday-to-Sunday week. Availability is shown per student in Class Details
+  and Attendance, and both single and bulk attendance APIs enforce the limit.
+- Added an Admin-only date-range permission action to Attendance. Admins can
+  search and select a student from the chosen class, set an inclusive date
+  range, provide a required reason, then grant Permission for each date. Admins
+  are not restricted by the teacher weekly limit.
+- Rebuilt the Attendance page with the Royal Purple Tailwind UI, responsive
+  class/date filters, status summary cards, student codes, status buttons,
+  notes, save feedback, and a read-only submitted state for teachers. Migrated
+  its page, API, and types to `.tsx`/`.ts` and updated route imports.
+- Updated Attendance's class chooser to look like a regular select control;
+  opening it reveals a search field inside the dropdown and filters by class
+  name/section. Enter/Escape work in the search field, and selecting a class
+  clears the loaded roster.
+- Removed student-name search from the Attendance table. Attendance summary
+  cards now appear below the page title and above Choose class on initial load,
+  and update when a class is selected. Removed the Save Attendance button;
+  status selections save automatically and notes save when focus leaves the field.
+  Grant Permission immediately records the selected date range.
+- Removed the Attendance Load Students button. Selecting a class now
+  automatically reloads the roster and current-day attendance, with
+  loading/loaded feedback and stale-request protection.
+- Removed the daily Date picker from Attendance filters; the page now records
+  for the current local date automatically. Admin permission ranges retain
+  separate start/end date inputs.
+
+## Follow-up — Student Requests UI (2026-10-25)
+
+- Redesigned the admin Student Requests list in the Royal Purple Tailwind style
+  with responsive search/status/category filters, status and priority badges,
+  student code, received date, row numbering, loading/error/empty states, and
+  pagination. Search and filters update automatically without Search/Reset
+  buttons.
+- Redesigned request details with student and request information cards, a
+  responsive status/admin-note form, inline save feedback, and back navigation.
+- Migrated the admin request list/detail pages and request API from JavaScript
+  to TypeScript, adding typed request records, filters, paginator data, and
+  update payloads. Updated router imports and the notification bell API import
+  to the new `.tsx`/`.ts` files.
+- Fixed request detail navigation to use `/admin/student-requests/:id`, matching
+  the nested admin routes.
+- No dependencies were added or changed. `npm run typecheck` was run after the
+  migration.
+
+## Follow-up — Settings UI (2026-10-25)
+
+- Rebuilt the admin Settings page in the Royal Purple Tailwind style, grouping
+  school contact data, Telegram notifications, and logo/banner branding into
+  responsive sections. Added URL image previews, unsaved-change indication,
+  discard/save actions, inline validation and API feedback, and a retry state
+  when settings cannot load; the existing API fields and behavior are retained.
+- Migrated SettingsPage and settingApi to TypeScript with typed settings and
+  field validation contracts, and updated the router to its `.tsx` path.
+- Expanded Settings content to use the full available main-content width.
+- No dependencies were added or changed. `npm run typecheck` passed after the
+  migration.
+
 ### Demo login
 
 After migrations, run `cd backend && php artisan db:seed` to seed demo records.

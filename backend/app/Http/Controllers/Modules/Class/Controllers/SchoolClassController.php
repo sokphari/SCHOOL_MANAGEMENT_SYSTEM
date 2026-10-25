@@ -17,7 +17,7 @@ class SchoolClassController extends Controller
     {
         $user = auth()->user();
 
-        $query = SchoolClass::with('teacher');
+        $query = SchoolClass::with('teacher')->withCount('students');
 
         if ($user->role === 'teacher') {
             $teacher = Teacher::where('user_id', $user->id)->first();

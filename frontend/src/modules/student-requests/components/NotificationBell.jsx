@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
-import { getPendingRequestCount } from "@/modules/student-requests/api/studentRequestsApi";
+import { getPendingRequestCount } from "@/modules/student-requests/api/studentRequestsApi.ts";
 
 export default function NotificationBell() {
   const [count, setCount] = useState(0);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Modules\Attendance\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modules\Attendance\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
@@ -45,6 +47,36 @@ class AttendanceController extends Controller
 
         $data = $request->validated();
 
+        if ($user->role === 'teacher') {
+            $permissionStudentIds = collect($data['records'])
+                ->where('status', 'excused')
+                ->pluck('student_id')
+                ->unique()
+                ->values();
+            $weekStart = Carbon::parse($data['attendance_date'])->startOfWeek(Carbon::MONDAY)->toDateString();
+            $weekEnd = Carbon::parse($data['attendance_date'])->endOfWeek(Carbon::SUNDAY)->toDateString();
+            $alreadyGrantedStudentIds = Attendance::whereIn('student_id', $permissionStudentIds)
+                ->where('status', 'excused')
+                ->whereBetween('attendance_date', [$weekStart, $weekEnd])
+                ->distinct()
+                ->pluck('student_id');
+
+            if ($alreadyGrantedStudentIds->isNotEmpty()) {
+                return response()->json([
+                    'message' => 'This student has already received permission this week.',
+                    'student_ids' => $alreadyGrantedStudentIds,
+                ], 403);
+            }
+        }
+
+        if ($user->role === 'teacher' && Attendance::where('school_class_id', $class->id)
+            ->where('attendance_date', $data['attendance_date'])
+            ->exists()) {
+            return response()->json([
+                'message' => 'Attendance has already been submitted and cannot be changed by a teacher.'
+            ], 403);
+        }
+
         $class->load('students');
         $classStudentIds = $class->students->pluck('id')->toArray();
 
@@ -77,9 +109,59 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function teacherPermissionAvailability(Request $request, \App\Models\SchoolClass $class)
+    {
+        $data = $request->validate(['date' => ['required', 'date']]);
+        $user = auth()->user();
+
+        if ($user->role === 'teacher') {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            if (!$teacher || $class->teacher_id !== $teacher->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
+        $date = Carbon::parse($data['date']);
+        $weekStart = $date->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $weekEnd = $date->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
+        $studentIds = $class->students()->pluck('students.id');
+        $usedStudentIds = Attendance::whereIn('student_id', $studentIds)
+            ->where('status', 'excused')
+            ->whereBetween('attendance_date', [$weekStart, $weekEnd])
+            ->distinct()
+            ->pluck('student_id')
+            ->flip();
+        $availability = $studentIds->mapWithKeys(fn ($studentId) => [
+            $studentId => $user->role === 'admin' || !$usedStudentIds->has($studentId),
+        ]);
+
+        return response()->json([
+            'availability' => $availability,
+            'week_start' => $weekStart,
+            'week_end' => $weekEnd,
+        ]);
+    }
+
     public function store(StoreAttendanceRequest $request)
     {
         $data = $request->validated();
+
+        $user = auth()->user();
+        if ($user->role === 'teacher' && $data['status'] === 'excused') {
+            $date = Carbon::parse($data['attendance_date']);
+            $weekStart = $date->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+            $weekEnd = $date->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
+            $alreadyGranted = Attendance::where('student_id', $data['student_id'])
+                ->where('status', 'excused')
+                ->whereBetween('attendance_date', [$weekStart, $weekEnd])
+                ->exists();
+
+            if ($alreadyGranted) {
+                return response()->json([
+                    'message' => 'This student has already received permission this week.'
+                ], 403);
+            }
+        }
 
         $exists = Attendance::where('student_id', $data['student_id'])
             ->where('school_class_id', $data['school_class_id'])
@@ -105,6 +187,46 @@ class AttendanceController extends Controller
             'message' => 'Attendance marked successfully',
             'data' => $attendance
         ], 201);
+    }
+
+    public function grantPermissionRange(Request $request, \App\Models\SchoolClass $class)
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Only admins can grant permission date ranges.'], 403);
+        }
+
+        $data = $request->validate([
+            'student_id' => ['required', 'exists:students,id'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'note' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $studentIsInClass = $class->students()->where('students.id', $data['student_id'])->exists();
+        if (!$studentIsInClass) {
+            return response()->json(['message' => 'The selected student is not assigned to this class.'], 422);
+        }
+
+        $saved = [];
+        foreach (CarbonPeriod::create($data['start_date'], $data['end_date']) as $date) {
+            $saved[] = Attendance::updateOrCreate(
+                [
+                    'student_id' => $data['student_id'],
+                    'school_class_id' => $class->id,
+                    'attendance_date' => $date->toDateString(),
+                ],
+                [
+                    'status' => 'excused',
+                    'note' => $data['note'] ?? null,
+                    'marked_by' => auth()->id(),
+                ]
+            );
+        }
+
+        return response()->json([
+            'message' => 'Permission recorded for the selected date range.',
+            'data' => $saved,
+        ]);
     }
 
     public function show(Attendance $attendance)

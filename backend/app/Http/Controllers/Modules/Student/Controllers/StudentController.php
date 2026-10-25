@@ -35,7 +35,7 @@ class StudentController extends Controller
         }
 
         return response()->json(
-            $query->latest()->paginate(10)
+            $query->latest()->paginate(15)
         );
     }
 
@@ -51,7 +51,31 @@ class StudentController extends Controller
 
     public function show(Student $student)
     {
-        return response()->json($student->load('classes'));
+        $student->load('classes')->loadCount('attendances')->loadCount([
+            'attendances as attendance_present_count' => fn ($query) => $query->where('status', 'present'),
+            'attendances as attendance_absent_count' => fn ($query) => $query->where('status', 'absent'),
+            'attendances as attendance_late_count' => fn ($query) => $query->where('status', 'late'),
+            'attendances as attendance_excused_count' => fn ($query) => $query->where('status', 'excused'),
+        ]);
+
+        $totalAttendance = (int) $student->attendances_count;
+        $presentAttendance = (int) $student->attendance_present_count;
+        $student->setAttribute(
+            'attendance_rate',
+            $totalAttendance > 0 ? round(($presentAttendance / $totalAttendance) * 100, 1) : null
+        );
+
+        return response()->json($student);
+    }
+
+    public function attendanceHistory(Student $student)
+    {
+        return response()->json(
+            $student->attendances()
+                ->with('schoolClass:id,name,section')
+                ->latest('attendance_date')
+                ->paginate(10)
+        );
     }
 
     public function update(UpdateStudentRequest $request, Student $student)

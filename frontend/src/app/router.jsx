@@ -17,9 +17,9 @@ import ClassEditPage from "@/modules/classes/pages/ClassesEditPage.tsx";
 import ClassDetailPage from "@/modules/classes/pages/ClassesDetailsPage.tsx";
 import AttendancePage from "@/modules/attendance/pages/AttendancePage.tsx";
 import StudentRequestScanPage from "@/modules/public/pages/StudentRequestScanPage";
-import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage";
-import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage";
-import SettingsPage from "@/modules/settings/pages/SettingsPage";
+import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage.tsx";
+import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage.tsx";
+import SettingsPage from "@/modules/settings/pages/SettingsPage.tsx";
 import HomePage from "@/modules/public/pages/HomePage";
 
 const router = createBrowserRouter([
