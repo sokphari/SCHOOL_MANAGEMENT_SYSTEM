@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { getClasses } from "@/modules/classes/api/classApi";
-import { getClass } from "@/modules/classes/api/classApi";
+import { useSearchParams } from "react-router-dom";
+import { getClasses } from "@/modules/classes/api/classApi.ts";
+import { getClass } from "@/modules/classes/api/classApi.ts";
 import {
   getAttendanceByClassAndDate,
   bulkSaveAttendance,
 } from "@/modules/attendance/api/attendanceApi";
 
 export default function AttendancePage() {
+  const [searchParams] = useSearchParams();
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState(() => searchParams.get("class_id") || "");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
@@ -438,7 +440,7 @@ export default function AttendancePage() {
                 color: "#3730a3",
               }}
             >
-              Excused
+              Permission
             </p>
             <p
               style={{
@@ -529,7 +531,7 @@ export default function AttendancePage() {
                     }}
                   >
                     <i className="fas fa-check-circle" style={{ marginRight: "8px" }} />
-                    Status
+                    Attendance
                   </th>
                   <th
                     style={{
@@ -581,42 +583,38 @@ export default function AttendancePage() {
                     >
                       {record.student_name}
                     </td>
-                    <td style={{ padding: "16px" }}>
-                      <select
-                        value={record.status}
-                        onChange={(e) =>
-                          handleStatusChange(record.student_id, e.target.value)
-                        }
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid #e5e7eb",
-                          borderRadius: "6px",
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          background:
-                            record.status === "present"
-                              ? "#dcfce7"
-                              : record.status === "absent"
-                                ? "#fee2e2"
-                                : record.status === "late"
-                                  ? "#fef3c7"
-                                  : "#e0e7ff",
-                          color:
-                            record.status === "present"
-                              ? "#15803d"
-                              : record.status === "absent"
-                                ? "#991b1b"
-                                : record.status === "late"
-                                  ? "#92400e"
-                                  : "#3730a3",
-                        }}
-                      >
-                        <option value="present">Present</option>
-                        <option value="absent">Absent</option>
-                        <option value="late">Late</option>
-                        <option value="excused">Excused</option>
-                      </select>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }} role="group" aria-label={`Attendance for ${record.student_name}`}>
+                        {[
+                          { value: "present", label: "Present", active: ["#dcfce7", "#166534", "#86efac"] },
+                          { value: "absent", label: "Absent", active: ["#fee2e2", "#991b1b", "#fca5a5"] },
+                          { value: "excused", label: "Permission", active: ["#e0e7ff", "#3730a3", "#a5b4fc"] },
+                          { value: "late", label: "Late", active: ["#fef3c7", "#92400e", "#fcd34d"] },
+                        ].map((option) => {
+                          const selected = record.status === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              aria-pressed={selected}
+                              onClick={() => handleStatusChange(record.student_id, option.value)}
+                              style={{
+                                padding: "7px 10px",
+                                border: `1px solid ${selected ? option.active[2] : "#d1d5db"}`,
+                                borderRadius: "7px",
+                                background: selected ? option.active[0] : "#fff",
+                                color: selected ? option.active[1] : "#6b7280",
+                                fontSize: "12px",
+                                fontWeight: selected ? "700" : "500",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </td>
                     <td style={{ padding: "16px" }}>
                       <input

@@ -37,6 +37,9 @@ export default function Sidebar({ isOpen, onNavigate }) {
   const [teachersExpanded, setTeachersExpanded] = useState(
     location.pathname.startsWith("/admin/teachers")
   );
+  const [classesExpanded, setClassesExpanded] = useState(
+    location.pathname.startsWith("/admin/classes")
+  );
 
   useEffect(() => {
     if (location.pathname.startsWith("/admin/students")) {
@@ -44,6 +47,9 @@ export default function Sidebar({ isOpen, onNavigate }) {
     }
     if (location.pathname.startsWith("/admin/teachers")) {
       setTeachersExpanded(true);
+    }
+    if (location.pathname.startsWith("/admin/classes")) {
+      setClassesExpanded(true);
     }
   }, [location.pathname]);
 
@@ -64,11 +70,13 @@ export default function Sidebar({ isOpen, onNavigate }) {
         {filteredMenu.map((item) => {
           const isStudents = item.label === "Students";
           const isTeachers = item.label === "Teachers";
-          if (isStudents || isTeachers) {
-            const expanded = isStudents ? studentsExpanded : teachersExpanded;
-            const setExpanded = isStudents ? setStudentsExpanded : setTeachersExpanded;
+          const isClasses = item.label === "Classes";
+          if (isStudents || isTeachers || isClasses) {
+            const expanded = isStudents ? studentsExpanded : isTeachers ? teachersExpanded : classesExpanded;
+            const setExpanded = isStudents ? setStudentsExpanded : isTeachers ? setTeachersExpanded : setClassesExpanded;
             const isActiveGroup = location.pathname.startsWith(item.path);
             const submenuId = `${item.label.toLowerCase()}-submenu`;
+            const createLabel = isTeachers ? "Teacher" : isClasses ? "Class" : "Student";
 
             return (
             <div key={item.path}>
@@ -110,7 +118,7 @@ export default function Sidebar({ isOpen, onNavigate }) {
                         onClick={onNavigate}
                         className={({ isActive }) => `rounded-lg px-3 py-2.5 text-xs no-underline transition-colors duration-200 ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}
                       >
-                        Create {item.label.slice(0, -1)}
+                        Create {createLabel}
                       </NavLink>
                     )}
                   </div>
@@ -134,7 +142,6 @@ export default function Sidebar({ isOpen, onNavigate }) {
                     <FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} />
                   </span>
                   <span>{item.label}</span>
-                  {item.label === "Classes" && <span className="ml-auto text-xl leading-none text-sidebar-muted">›</span>}
                 </>
               )}
             </NavLink>

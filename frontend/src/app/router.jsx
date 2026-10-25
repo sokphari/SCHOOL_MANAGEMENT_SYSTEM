@@ -11,10 +11,10 @@ import StudentDetailsPage from "@/modules/students/pages/StudentDetailsPage.tsx"
 import TeachersPage from "@/modules/teachers/pages/TeachersPage.tsx";
 import TeacherCreatePage from "@/modules/teachers/pages/TeachersCreatePage.tsx";
 import TeacherEditPage from "@/modules/teachers/pages/TeachersEditPage.tsx";
-import ClassesPage from "@/modules/classes/pages/ClassesPage";
-import ClassCreatePage from "@/modules/classes/pages/ClassesCreatePage";
-import ClassEditPage from "@/modules/classes/pages/ClassesEditPage";
-import ClassDetailPage from "@/modules/classes/pages/ClassesDetailsPage";
+import ClassesPage from "@/modules/classes/pages/ClassesPage.tsx";
+import ClassCreatePage from "@/modules/classes/pages/ClassesCreatePage.tsx";
+import ClassEditPage from "@/modules/classes/pages/ClassesEditPage.tsx";
+import ClassDetailPage from "@/modules/classes/pages/ClassesDetailsPage.tsx";
 import AttendancePage from "@/modules/attendance/pages/AttendancePage";
 import StudentRequestScanPage from "@/modules/public/pages/StudentRequestScanPage";
 import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage";
