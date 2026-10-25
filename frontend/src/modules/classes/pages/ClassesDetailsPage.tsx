@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import axios from "axios";
 import { faArrowLeft, faBookOpen, faCalendarDays, faCalendarCheck, faChalkboardUser, faDoorOpen, faEye, faPenToSquare, faTrash, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { getClass, removeStudentFromClass } from "@/modules/classes/api/classApi.ts";
-import { bulkSaveAttendance, getAttendanceByClassAndDate } from "@/modules/attendance/api/attendanceApi.js";
+import { bulkSaveAttendance, getAttendanceByClassAndDate, getTeacherPermissionAvailability } from "@/modules/attendance/api/attendanceApi.ts";
 import { useAuth } from "@/modules/auth/context/AuthContext";
 import AppTable from "@/shared/components/AppTable.tsx";
 import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
@@ -35,6 +36,7 @@ export default function ClassDetailPage() {
   const [students, setStudents] = useState<ClassStudent[]>([]);
   const [attendanceByStudent, setAttendanceByStudent] = useState<Record<number, ClassAttendanceStatus>>({});
   const [attendanceNotes, setAttendanceNotes] = useState<Record<number, string | null>>({});
+  const [permissionAvailability, setPermissionAvailability] = useState<Record<number, boolean>>({});
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [attendanceDirty, setAttendanceDirty] = useState(false);
   const [trackingAttendance, setTrackingAttendance] = useState(false);
@@ -60,6 +62,13 @@ export default function ClassDetailPage() {
       setHasSavedAttendance(Object.keys(statuses).length > 0);
     } catch (attendanceError) {
       console.error("Failed to load today's class attendance", attendanceError);
+    }
+    try {
+      const permissionResponse = await getTeacherPermissionAvailability(id, getLocalDateString());
+      setPermissionAvailability(permissionResponse.data.availability || {});
+    } catch (permissionError) {
+      console.error("Failed to load weekly permission availability", permissionError);
+      setPermissionAvailability({});
     }
   }, [id]);
 
@@ -126,7 +135,8 @@ export default function ClassDetailPage() {
       alert("Attendance saved successfully");
     } catch (attendanceError) {
       console.error(attendanceError);
-      alert("Failed to save attendance. Please try again.");
+      const message = axios.isAxiosError(attendanceError) ? attendanceError.response?.data?.message : undefined;
+      alert(message || "Failed to save attendance. Please try again.");
     } finally {
       setSavingAttendance(false);
     }
@@ -149,7 +159,9 @@ export default function ClassDetailPage() {
         <div className="grid min-w-[360px] grid-cols-4 gap-2" role="group" aria-label={`Today's attendance for ${student.first_name} ${student.last_name}`}>
           {attendanceOptions.map((option) => {
             const selected = (attendanceByStudent[student.id] ?? "present") === option.value;
-            return <button key={option.value} type="button" aria-pressed={selected} disabled={!trackingAttendance || savingAttendance} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-10 min-w-[78px] flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
+            const permissionUnavailable = option.value === "excused" && user?.role === "teacher" && permissionAvailability[student.id] !== true;
+            const permissionHint = permissionUnavailable ? "This student has already received permission this week" : "For an in-person request to Admin; one permission per student per week";
+            return <button key={option.value} type="button" aria-pressed={selected} title={option.value === "excused" ? permissionHint : option.label} disabled={!trackingAttendance || savingAttendance || permissionUnavailable} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-10 min-w-[78px] flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
           })}
         </div>
       ),

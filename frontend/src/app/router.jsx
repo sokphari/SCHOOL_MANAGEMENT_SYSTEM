@@ -15,7 +15,7 @@ import ClassesPage from "@/modules/classes/pages/ClassesPage.tsx";
 import ClassCreatePage from "@/modules/classes/pages/ClassesCreatePage.tsx";
 import ClassEditPage from "@/modules/classes/pages/ClassesEditPage.tsx";
 import ClassDetailPage from "@/modules/classes/pages/ClassesDetailsPage.tsx";
-import AttendancePage from "@/modules/attendance/pages/AttendancePage";
+import AttendancePage from "@/modules/attendance/pages/AttendancePage.tsx";
 import StudentRequestScanPage from "@/modules/public/pages/StudentRequestScanPage";
 import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage";
 import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage";
