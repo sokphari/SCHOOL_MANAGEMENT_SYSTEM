@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getClass, updateClass } from "@/modules/classes/api/classApi";
 import { getTeachers } from "@/modules/teachers/api/teacherApi";
-import AppInput from "@/shared/components/AppInput";
-import AppSelect from "@/shared/components/AppSelect";
-import AppButton from "@/shared/components/AppButton";
+import AppInput from "@/shared/components/AppInput.tsx";
+import AppSelect from "@/shared/components/AppSelect.tsx";
+import AppButton from "@/shared/components/AppButton.tsx";
 
 export default function ClassEditPage() {
   const { id } = useParams();

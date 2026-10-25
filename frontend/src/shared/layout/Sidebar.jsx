@@ -1,10 +1,12 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRightFromBracket,
   faBookOpen,
   faCalendarCheck,
   faChalkboardUser,
+  faChevronDown,
   faChartPie,
   faClipboardList,
   faGear,
@@ -27,7 +29,17 @@ const menuIcons = {
 
 export default function Sidebar({ isOpen, onNavigate }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role));
+  const [studentsExpanded, setStudentsExpanded] = useState(
+    location.pathname.startsWith("/admin/students")
+  );
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin/students")) {
+      setStudentsExpanded(true);
+    }
+  }, [location.pathname]);
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-[264px] -translate-x-full flex-col border-r border-white/10 bg-sidebar-bg px-[18px] pb-[18px] pt-[26px] text-sidebar-ink shadow-2xl transition-transform duration-200 lg:translate-x-0 ${isOpen ? "translate-x-0" : ""}`}>
@@ -44,23 +56,72 @@ export default function Sidebar({ isOpen, onNavigate }) {
       <nav className="mt-5 flex-1 overflow-auto" aria-label="Main navigation">
         <p className="mb-[11px] ml-2.5 text-[10px] font-bold uppercase tracking-[1.15px] text-sidebar-muted">Workspace</p>
         {filteredMenu.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={onNavigate}
-            className={({ isActive }) => `group relative my-[3px] flex min-h-[46px] items-center gap-3 rounded-xl border px-3 text-[13px] font-medium no-underline transition ${isActive ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && <span className="absolute bottom-2.5 left-[-19px] top-2.5 w-[3px] rounded-r bg-violet-300" />}
-                <span className={`grid w-5 place-items-center text-sm ${isActive ? "text-violet-200" : "text-violet-200/70"}`}>
+          item.label === "Students" ? (
+            <div key={item.path}>
+              <button
+                type="button"
+                aria-expanded={studentsExpanded}
+                aria-controls="student-submenu"
+                onClick={() => setStudentsExpanded((expanded) => !expanded)}
+                className={`group relative my-[3px] flex min-h-[46px] w-full items-center gap-3 rounded-xl border px-3 text-left text-[13px] font-medium transition ${location.pathname.startsWith("/admin/students") ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}
+              >
+                {location.pathname.startsWith("/admin/students") && <span className="absolute bottom-2.5 left-[-19px] top-2.5 w-[3px] rounded-r bg-violet-300" />}
+                <span className="grid w-5 place-items-center text-sm text-violet-200/80">
                   <FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} />
                 </span>
                 <span>{item.label}</span>
-                {item.label === "Classes" && <span className="ml-auto text-xl leading-none text-sidebar-muted">›</span>}
-              </>
-            )}
-          </NavLink>
+                <FontAwesomeIcon
+                  className={`ml-auto text-[10px] text-sidebar-muted transition-transform duration-300 ease-in-out ${studentsExpanded ? "rotate-180" : ""}`}
+                  icon={faChevronDown}
+                />
+              </button>
+
+              <div
+                id="student-submenu"
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${studentsExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="ml-6 flex flex-col gap-1 border-l border-white/10 py-1 pl-3">
+                    <NavLink
+                      to="/admin/students"
+                      onClick={onNavigate}
+                      end
+                      className={({ isActive }) => `rounded-lg px-3 py-2.5 text-xs no-underline transition-colors duration-200 ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}
+                    >
+                      View Students
+                    </NavLink>
+                    {user?.role === "admin" && (
+                      <NavLink
+                        to="/admin/students/create"
+                        onClick={onNavigate}
+                        className={({ isActive }) => `rounded-lg px-3 py-2.5 text-xs no-underline transition-colors duration-200 ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}
+                      >
+                        Create Student
+                      </NavLink>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={onNavigate}
+              className={({ isActive }) => `group relative my-[3px] flex min-h-[46px] items-center gap-3 rounded-xl border px-3 text-[13px] font-medium no-underline transition ${isActive ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && <span className="absolute bottom-2.5 left-[-19px] top-2.5 w-[3px] rounded-r bg-violet-300" />}
+                  <span className={`grid w-5 place-items-center text-sm ${isActive ? "text-violet-200" : "text-violet-200/70"}`}>
+                    <FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} />
+                  </span>
+                  <span>{item.label}</span>
+                  {item.label === "Classes" && <span className="ml-auto text-xl leading-none text-sidebar-muted">›</span>}
+                </>
+              )}
+            </NavLink>
+          )
         ))}
       </nav>
 

@@ -4,8 +4,8 @@ import {
   getStudentRequest,
   updateStudentRequestStatus,
 } from "@/modules/student-requests/api/studentRequestsApi";
-import AppButton from "@/shared/components/AppButton";
-import AppSelect from "@/shared/components/AppSelect";
+import AppButton from "@/shared/components/AppButton.tsx";
+import AppSelect from "@/shared/components/AppSelect.tsx";
 
 export default function StudentRequestDetailPage() {
   const { id } = useParams();

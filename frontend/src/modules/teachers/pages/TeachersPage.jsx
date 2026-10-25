@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTeachers, deleteTeacher } from "@/modules/teachers/api/teacherApi";
-import AppTable from "@/shared/components/AppTable";
-import AppButton from "@/shared/components/AppButton";
-import AppInput from "@/shared/components/AppInput";
-import AppSelect from "@/shared/components/AppSelect";
-import AppPagination from "@/shared/components/AppPagination";
+import AppTable from "@/shared/components/AppTable.tsx";
+import AppButton from "@/shared/components/AppButton.tsx";
+import AppInput from "@/shared/components/AppInput.tsx";
+import AppSelect from "@/shared/components/AppSelect.tsx";
+import AppPagination from "@/shared/components/AppPagination.tsx";
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState([]);

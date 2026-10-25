@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getClass, assignStudentToClass, removeStudentFromClass } from "@/modules/classes/api/classApi";
-import { getStudents } from "@/modules/students/api/studentApi";
-import AppButton from "@/shared/components/AppButton";
-import AppTable from "@/shared/components/AppTable";
+import { getStudents } from "@/modules/students/api/studentApi.ts";
+import AppButton from "@/shared/components/AppButton.tsx";
+import AppTable from "@/shared/components/AppTable.tsx";
 
 export default function ClassDetailPage() {
   const { id } = useParams();

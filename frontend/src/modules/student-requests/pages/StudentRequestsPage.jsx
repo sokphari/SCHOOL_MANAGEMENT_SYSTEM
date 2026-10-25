@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStudentRequests } from "@/modules/student-requests/api/studentRequestsApi";
-import AppTable from "@/shared/components/AppTable";
-import AppButton from "@/shared/components/AppButton";
-import AppInput from "@/shared/components/AppInput";
-import AppSelect from "@/shared/components/AppSelect";
-import AppPagination from "@/shared/components/AppPagination";
+import AppTable from "@/shared/components/AppTable.tsx";
+import AppButton from "@/shared/components/AppButton.tsx";
+import AppInput from "@/shared/components/AppInput.tsx";
+import AppSelect from "@/shared/components/AppSelect.tsx";
+import AppPagination from "@/shared/components/AppPagination.tsx";
 
 export default function StudentRequestsPage() {
   const [requests, setRequests] = useState([]);

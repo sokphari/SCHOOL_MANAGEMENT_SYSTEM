@@ -4,9 +4,10 @@ import DashboardPage from "@/modules/dashboard/pages/DashboardPage";
 import AppLayout from "@/shared/layout/AppLayout";
 import ProtectedRoute from "@/shared/guards/ProtectedRoute";
 import RoleRoute from "@/shared/guards/RoleRoute";
-import StudentsPage from "@/modules/students/pages/StudentsPage";
-import StudentCreatePage from "@/modules/students/pages/StudentsCreatePage";
-import StudentEditPage from "@/modules/students/pages/StudentsEditPage";
+import StudentsPage from "@/modules/students/pages/StudentsPage.tsx";
+import StudentCreatePage from "@/modules/students/pages/StudentsCreatePage.tsx";
+import StudentEditPage from "@/modules/students/pages/StudentsEditPage.tsx";
+import StudentDetailsPage from "@/modules/students/pages/StudentDetailsPage.tsx";
 import TeachersPage from "@/modules/teachers/pages/TeachersPage";
 import TeacherCreatePage from "@/modules/teachers/pages/TeachersCreatePage";
 import TeacherEditPage from "@/modules/teachers/pages/TeachersEditPage";
@@ -98,6 +99,14 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin"]}>
             <StudentEditPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "students/:id",
+        element: (
+          <RoleRoute roles={["admin", "teacher"]}>
+            <StudentDetailsPage />
           </RoleRoute>
         ),
       },

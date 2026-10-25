@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTeacher } from "@/modules/teachers/api/teacherApi";
-import AppInput from "@/shared/components/AppInput";
-import AppSelect from "@/shared/components/AppSelect";
-import AppButton from "@/shared/components/AppButton";
+import AppInput from "@/shared/components/AppInput.tsx";
+import AppSelect from "@/shared/components/AppSelect.tsx";
+import AppButton from "@/shared/components/AppButton.tsx";
 
 export default function TeacherCreatePage() {
   const navigate = useNavigate();
