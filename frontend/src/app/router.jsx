@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import LoginPage from "@/modules/auth/pages/LoginPage";
+import LoginPage from "@/modules/auth/pages/LoginPage.tsx";
 import DashboardPage from "@/modules/dashboard/pages/DashboardPage";
 import AppLayout from "@/shared/layout/AppLayout";
 import ProtectedRoute from "@/shared/guards/ProtectedRoute";
@@ -20,7 +20,7 @@ import StudentRequestScanPage from "@/modules/public/pages/StudentRequestScanPag
 import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage.tsx";
 import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage.tsx";
 import SettingsPage from "@/modules/settings/pages/SettingsPage.tsx";
-import HomePage from "@/modules/public/pages/HomePage";
+import HomePage from "@/modules/public/pages/HomePage.tsx";
 
 const router = createBrowserRouter([
   {

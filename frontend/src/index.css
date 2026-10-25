@@ -21,7 +21,8 @@
   --sidebar-active: rgba(160, 122, 234, 0.2);
 }
 
-.admin-shell[data-theme="dark"] {
+.admin-shell[data-theme="dark"],
+.login-shell[data-theme="dark"] {
   --app-bg: #11101a;
   --surface: #1a1825;
   --surface-raised: #242130;

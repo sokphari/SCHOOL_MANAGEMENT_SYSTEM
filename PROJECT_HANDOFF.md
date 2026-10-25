@@ -339,6 +339,34 @@ repeating discovery work.
 - No dependencies were added or changed. `npm run typecheck` passed after the
   migration.
 
+## Follow-up — Login UI (2026-10-25)
+
+- Rebuilt the login form with a responsive Royal Purple sign-in layout, accessible
+  email/password fields, show/hide password control, inline authentication and
+  rate-limit errors, and a disabled/loading submit state. Existing auth context
+  login and dashboard navigation remain in use.
+- Added a Light/Dark toggle to Login and persisted the selection using the same
+  `school-management-theme` localStorage key as the admin layout. Extended the
+  dark theme token scope to the standalone login shell.
+- Expanded the login form to a 560px maximum width with larger field sizing and
+  card padding for easier reading and use.
+- Increased the Login card's vertical spacing and minimum height to 370px
+  (400px on larger screens), keeping it centered in the available viewport.
+- Migrated LoginPage to TypeScript and updated its router import to `.tsx`.
+- No dependencies were added or changed. `npm run typecheck` passed after the
+  migration.
+
+## Follow-up — Public Home UI (2026-10-25)
+
+- Replaced the old inline-styled Public Home page with a responsive Royal Purple
+  landing page, school identity header, hero/banner, school overview, values,
+  dynamic contact cards, and links to student requests and staff login.
+- The page continues to load school name, contact details, logo, and banner from
+  `GET /api/public/settings` through the shared API client; fallback content is
+  shown if the request fails.
+- Migrated HomePage and publicSettingApi to TypeScript and updated the router
+  import. No dependencies were added or changed. `npm run typecheck` passed.
+
 ### Demo login
 
 After migrations, run `cd backend && php artisan db:seed` to seed demo records.
