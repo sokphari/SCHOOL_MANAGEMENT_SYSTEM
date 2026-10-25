@@ -34,10 +34,16 @@ export default function Sidebar({ isOpen, onNavigate }) {
   const [studentsExpanded, setStudentsExpanded] = useState(
     location.pathname.startsWith("/admin/students")
   );
+  const [teachersExpanded, setTeachersExpanded] = useState(
+    location.pathname.startsWith("/admin/teachers")
+  );
 
   useEffect(() => {
     if (location.pathname.startsWith("/admin/students")) {
       setStudentsExpanded(true);
+    }
+    if (location.pathname.startsWith("/admin/teachers")) {
+      setTeachersExpanded(true);
     }
   }, [location.pathname]);
 
@@ -55,55 +61,66 @@ export default function Sidebar({ isOpen, onNavigate }) {
 
       <nav className="mt-5 flex-1 overflow-auto" aria-label="Main navigation">
         <p className="mb-[11px] ml-2.5 text-[10px] font-bold uppercase tracking-[1.15px] text-sidebar-muted">Workspace</p>
-        {filteredMenu.map((item) => (
-          item.label === "Students" ? (
+        {filteredMenu.map((item) => {
+          const isStudents = item.label === "Students";
+          const isTeachers = item.label === "Teachers";
+          if (isStudents || isTeachers) {
+            const expanded = isStudents ? studentsExpanded : teachersExpanded;
+            const setExpanded = isStudents ? setStudentsExpanded : setTeachersExpanded;
+            const isActiveGroup = location.pathname.startsWith(item.path);
+            const submenuId = `${item.label.toLowerCase()}-submenu`;
+
+            return (
             <div key={item.path}>
               <button
                 type="button"
-                aria-expanded={studentsExpanded}
-                aria-controls="student-submenu"
-                onClick={() => setStudentsExpanded((expanded) => !expanded)}
-                className={`group relative my-[3px] flex min-h-[46px] w-full items-center gap-3 rounded-xl border px-3 text-left text-[13px] font-medium transition ${location.pathname.startsWith("/admin/students") ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}
+                aria-expanded={expanded}
+                aria-controls={submenuId}
+                onClick={() => setExpanded((isExpanded) => !isExpanded)}
+                className={`group relative my-[3px] flex min-h-[46px] w-full items-center gap-3 rounded-xl border px-3 text-left text-[13px] font-medium transition ${isActiveGroup ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}
               >
-                {location.pathname.startsWith("/admin/students") && <span className="absolute bottom-2.5 left-[-19px] top-2.5 w-[3px] rounded-r bg-violet-300" />}
+                {isActiveGroup && <span className="absolute bottom-2.5 left-[-19px] top-2.5 w-[3px] rounded-r bg-violet-300" />}
                 <span className="grid w-5 place-items-center text-sm text-violet-200/80">
                   <FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} />
                 </span>
                 <span>{item.label}</span>
                 <FontAwesomeIcon
-                  className={`ml-auto text-[10px] text-sidebar-muted transition-transform duration-300 ease-in-out ${studentsExpanded ? "rotate-180" : ""}`}
+                  className={`ml-auto text-[10px] text-sidebar-muted transition-transform duration-300 ease-in-out ${expanded ? "rotate-180" : ""}`}
                   icon={faChevronDown}
                 />
               </button>
 
               <div
-                id="student-submenu"
-                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${studentsExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                id={submenuId}
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
               >
                 <div className="min-h-0 overflow-hidden">
                   <div className="ml-6 flex flex-col gap-1 border-l border-white/10 py-1 pl-3">
                     <NavLink
-                      to="/admin/students"
+                      to={item.path}
                       onClick={onNavigate}
                       end
                       className={({ isActive }) => `rounded-lg px-3 py-2.5 text-xs no-underline transition-colors duration-200 ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}
                     >
-                      View Students
+                      View {item.label}
                     </NavLink>
-                    {user?.role === "admin" && (
+                    {(isTeachers || user?.role === "admin") && (
                       <NavLink
-                        to="/admin/students/create"
+                        to={`${item.path}/create`}
                         onClick={onNavigate}
                         className={({ isActive }) => `rounded-lg px-3 py-2.5 text-xs no-underline transition-colors duration-200 ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}
                       >
-                        Create Student
+                        Create {item.label.slice(0, -1)}
                       </NavLink>
                     )}
                   </div>
                 </div>
               </div>
             </div>
-          ) : (
+            );
+          }
+
+          return (
             <NavLink
               key={item.path}
               to={item.path}
@@ -121,8 +138,8 @@ export default function Sidebar({ isOpen, onNavigate }) {
                 </>
               )}
             </NavLink>
-          )
-        ))}
+          );
+        })}
       </nav>
 
       <div className="border-t border-white/10 pt-4">

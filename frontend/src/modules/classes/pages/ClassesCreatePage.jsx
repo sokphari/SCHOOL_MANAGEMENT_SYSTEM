@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createClass } from "@/modules/classes/api/classApi";
-import { getTeachers } from "@/modules/teachers/api/teacherApi";
+import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppButton from "@/shared/components/AppButton.tsx";
