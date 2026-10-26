@@ -32,6 +32,45 @@ class ApiEndpointsTest extends TestCase
         ])->assertOk();
         $teacherToken = $teacherLogin->json('token');
 
+        $this->getJson('/api/locations/buildings')->assertUnauthorized();
+        $this->withToken($teacherToken)->getJson('/api/locations/buildings')->assertForbidden();
+        $building = $this->withToken($adminToken)->postJson('/api/locations/buildings', [
+            'name' => 'API Test Building',
+            'code' => 'API-B',
+            'description' => 'Facilities endpoint test',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+        $buildingId = $building['id'];
+        $this->withToken($adminToken)->putJson("/api/locations/buildings/{$buildingId}", [
+            'name' => 'API Test Building Updated', 'code' => 'API-B', 'description' => 'Updated facilities test', 'status' => 'active',
+        ])->assertOk();
+        $floor = $this->withToken($adminToken)->postJson('/api/locations/floors', [
+            'building_id' => $buildingId,
+            'name' => 'API Test Floor',
+            'floor_number' => 1,
+            'code' => 'API-F1',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+        $floorId = $floor['id'];
+        $this->withToken($adminToken)->putJson("/api/locations/floors/{$floorId}", [
+            'building_id' => $buildingId, 'name' => 'API Test Floor Updated', 'floor_number' => 1, 'code' => 'API-F1', 'status' => 'active',
+        ])->assertOk();
+        $room = $this->withToken($adminToken)->postJson('/api/locations/rooms', [
+            'floor_id' => $floorId,
+            'name' => 'API Test Room',
+            'room_type' => 'classroom',
+            'code' => 'API-R1',
+            'capacity' => 24,
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+        $roomId = $room['id'];
+        $this->withToken($adminToken)->putJson("/api/locations/rooms/{$roomId}", [
+            'floor_id' => $floorId, 'name' => 'API Test Room Updated', 'room_type' => 'computer_lab', 'code' => 'API-R1', 'capacity' => 28, 'status' => 'active',
+        ])->assertOk();
+        $this->withToken($adminToken)->getJson('/api/locations/buildings')->assertOk()
+            ->assertJsonPath('0.floors.0.rooms.0.name', 'API Test Room Updated')
+            ->assertJsonPath('0.floors.0.rooms.0.room_type', 'computer_lab');
+
         $this->postJson('/api/login', [
             'email' => 'admin@example.com',
             'password' => 'wrong-password',
@@ -110,13 +149,24 @@ class ApiEndpointsTest extends TestCase
 
         $classData = [
             'name' => 'API Test Class',
+            'course' => 'API Test Course',
+            'lesson' => 'API Test Lesson',
+            'delivery_mode' => 'physical',
             'section' => 'Z',
             'academic_year' => '2026-2027',
+            'building_id' => $buildingId,
+            'floor_id' => $floorId,
+            'room_id' => $roomId,
+            'term' => 'Monday and Wednesday',
+            'time' => '09:00 AM - 10:30 AM',
             'teacher_id' => $teacherId,
             'status' => 'active',
         ];
         $class = $this->withToken($adminToken)->postJson('/api/classes', $classData)->assertCreated()->json('data');
         $classId = $class['id'];
+        $this->withToken($adminToken)->deleteJson("/api/locations/rooms/{$roomId}")->assertStatus(409);
+        $this->withToken($adminToken)->deleteJson("/api/locations/floors/{$floorId}")->assertStatus(409);
+        $this->withToken($adminToken)->deleteJson("/api/locations/buildings/{$buildingId}")->assertStatus(409);
         $this->withToken($adminToken)->getJson("/api/classes/{$classId}")->assertOk();
         $classData['name'] = 'API Test Class Updated';
         $this->withToken($adminToken)->putJson("/api/classes/{$classId}", $classData)->assertOk();
@@ -143,6 +193,9 @@ class ApiEndpointsTest extends TestCase
 
         $this->withToken($adminToken)->deleteJson("/api/classes/{$classId}/students/{$studentId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/classes/{$classId}")->assertOk();
+        $this->withToken($adminToken)->deleteJson("/api/locations/rooms/{$roomId}")->assertOk();
+        $this->withToken($adminToken)->deleteJson("/api/locations/floors/{$floorId}")->assertOk();
+        $this->withToken($adminToken)->deleteJson("/api/locations/buildings/{$buildingId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/teachers/{$teacherId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/students/{$studentId}")->assertOk();
 

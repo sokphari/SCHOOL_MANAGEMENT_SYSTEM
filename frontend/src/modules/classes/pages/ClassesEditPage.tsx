@@ -5,9 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { getClass, updateClass } from "@/modules/classes/api/classApi.ts";
 import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
+import { getBuildings } from "@/modules/locations/api/locationApi.ts";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { ClassForm, ClassPayload, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
+import type { BuildingLocation } from "@/modules/locations/types/location";
 
 const fieldClass = "mb-0";
 
@@ -16,6 +18,7 @@ export default function ClassEditPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState<ClassForm | null>(null);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [buildings, setBuildings] = useState<BuildingLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
@@ -26,10 +29,11 @@ export default function ClassEditPage() {
     const fetchData = async () => {
       try {
         if (!id) throw new Error("Missing class id");
-        const [classResponse, teacherResponse] = await Promise.all([getClass(id), getTeachers()]);
+        const [classResponse, teacherResponse, buildingResponse] = await Promise.all([getClass(id), getTeachers(), getBuildings()]);
         if (!active) return;
         const data = classResponse.data;
         setTeachers((teacherResponse.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
+        setBuildings(buildingResponse.data || []);
         setForm({
           name: data.name || "",
           course: data.course || data.name || "",
@@ -37,9 +41,9 @@ export default function ClassEditPage() {
           delivery_mode: data.delivery_mode || "physical",
           section: data.section || "",
           academic_year: data.academic_year || "",
-          building: data.building || "Building A",
-          floor: data.floor || "Floor 1",
-          room: data.room || "",
+          building_id: data.building_id ? String(data.building_id) : "",
+          floor_id: data.floor_id ? String(data.floor_id) : "",
+          room_id: data.room_id ? String(data.room_id) : "",
           term: data.term || "Term 1",
           time: data.time || "08:00",
           teacher_id: data.teacher_id ? String(data.teacher_id) : "",
@@ -59,7 +63,7 @@ export default function ClassEditPage() {
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.currentTarget;
-    setForm((current) => current ? { ...current, [name]: value } : current);
+    setForm((current) => current ? { ...current, [name]: value, ...(name === "building_id" ? { floor_id: "", room_id: "" } : {}), ...(name === "floor_id" ? { room_id: "" } : {}) } : current);
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
 
@@ -69,7 +73,7 @@ export default function ClassEditPage() {
     setSaving(true);
     setErrors({});
     try {
-      const payload: ClassPayload = { ...form, teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
+      const payload: ClassPayload = { ...form, building_id: Number(form.building_id), floor_id: Number(form.floor_id), room_id: Number(form.room_id), teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
       await updateClass(id, payload);
       alert("Class updated successfully");
       navigate(`/admin/classes/${id}`);
@@ -103,9 +107,9 @@ export default function ClassEditPage() {
               <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" value={form.delivery_mode} onChange={handleChange} options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
               <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} error={errors.section?.[0]} />
               <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} error={errors.academic_year?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Building" name="building" value={form.building} onChange={handleChange} error={errors.building?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Floor" name="floor" value={form.floor} onChange={handleChange} error={errors.floor?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Room" name="room" value={form.room} onChange={handleChange} error={errors.room?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Building" name="building_id" value={form.building_id} onChange={handleChange} placeholder="Select building" options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" value={form.floor_id} onChange={handleChange} placeholder="Select floor" options={(buildings.find((building) => building.id === Number(form.building_id))?.floors || []).filter((floor) => floor.status === "active").map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Room" name="room_id" value={form.room_id} onChange={handleChange} placeholder="Select room" options={(buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms || []).filter((room) => room.status === "active").map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />
               <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} error={errors.term?.[0]} />
               <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} />
             </div>

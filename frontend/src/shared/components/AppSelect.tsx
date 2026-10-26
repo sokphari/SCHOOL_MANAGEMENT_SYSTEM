@@ -14,6 +14,8 @@ interface AppSelectProps {
   error?: string;
   containerClassName?: string;
   placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
 }
 
 export default function AppSelect({
@@ -25,6 +27,8 @@ export default function AppSelect({
   error = "",
   containerClassName = "mb-4",
   placeholder = "Select",
+  disabled = false,
+  required = false,
 }: AppSelectProps) {
   return (
     <div className={`${containerClassName} min-w-0`}>
@@ -34,9 +38,11 @@ export default function AppSelect({
         name={name}
         value={value}
         onChange={onChange}
+        disabled={disabled}
+        required={required}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${name}-error` : undefined}
-        className={`w-full rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 ${error ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`}
+        className={`w-full rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-60 ${error ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}

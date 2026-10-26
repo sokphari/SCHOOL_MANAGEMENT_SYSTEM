@@ -21,6 +21,9 @@ import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequest
 import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage.tsx";
 import SettingsPage from "@/modules/settings/pages/SettingsPage.tsx";
 import HomePage from "@/modules/public/pages/HomePage.tsx";
+import FacilitiesPage from "@/modules/facilities/pages/FacilitiesPage.tsx";
+import FacilitiesFormPage from "@/modules/facilities/pages/FacilitiesFormPage.tsx";
+import FacilitiesRoomDetailsPage from "@/modules/facilities/pages/FacilitiesRoomDetailsPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -119,6 +122,18 @@ const router = createBrowserRouter([
           </RoleRoute>
         ),
       },
+      { path: "facilities", element: <RoleRoute roles={["admin"]}><FacilitiesPage /></RoleRoute> },
+      { path: "facilities/buildings/create", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="building" /></RoleRoute> },
+      { path: "facilities/buildings/:id/edit", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="building" /></RoleRoute> },
+      { path: "facilities/floors/create", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="floor" /></RoleRoute> },
+      { path: "facilities/floors/:id/edit", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="floor" /></RoleRoute> },
+      { path: "facilities/rooms/create", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="room" /></RoleRoute> },
+      { path: "facilities/rooms/:id/edit", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="room" /></RoleRoute> },
+      { path: "facilities/rooms/:id", element: <RoleRoute roles={["admin"]}><FacilitiesRoomDetailsPage /></RoleRoute> },
+      { path: "locations", element: <Navigate to="/admin/facilities" replace /> },
+      { path: "buildings/*", element: <Navigate to="/admin/facilities" replace /> },
+      { path: "floors/*", element: <Navigate to="/admin/facilities" replace /> },
+      { path: "rooms/*", element: <Navigate to="/admin/facilities" replace /> },
       {
         path: "classes/create",
         element: (

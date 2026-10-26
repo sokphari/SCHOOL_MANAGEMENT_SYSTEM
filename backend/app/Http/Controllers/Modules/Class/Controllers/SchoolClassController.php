@@ -8,6 +8,9 @@ use App\Http\Controllers\Modules\Class\Requests\UpdateSchoolClassRequest;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\Building;
+use App\Models\Floor;
+use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +22,7 @@ class SchoolClassController extends Controller
     {
         $user = auth()->user();
 
-        $query = SchoolClass::with('teacher')->withCount('students');
+        $query = SchoolClass::with(['teacher', 'buildingLocation', 'floorLocation', 'roomLocation'])->withCount('students');
 
         if ($user->role === 'teacher') {
             $teacher = Teacher::where('user_id', $user->id)->first();
@@ -55,7 +58,9 @@ class SchoolClassController extends Controller
 
     public function store(StoreSchoolClassRequest $request)
     {
-        $schoolClass = SchoolClass::create($request->validated());
+        $data = $request->validated();
+        $this->storeLocationNames($data);
+        $schoolClass = SchoolClass::create($data);
 
         return response()->json([
             'message' => 'Class created successfully',
@@ -66,13 +71,15 @@ class SchoolClassController extends Controller
     public function show(SchoolClass $class)
     {
         return response()->json(
-            $class->load(['teacher', 'students'])
+            $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation'])
         );
     }
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class)
     {
-        $class->update($request->validated());
+        $data = $request->validated();
+        $this->storeLocationNames($data);
+        $class->update($data);
 
         return response()->json([
             'message' => 'Class updated successfully',
@@ -224,5 +231,12 @@ class SchoolClassController extends Controller
             'message' => 'Class teacher updated successfully.',
             'data' => $class->fresh()->load('teacher'),
         ]);
+    }
+
+    private function storeLocationNames(array &$data): void
+    {
+        $data['building'] = Building::findOrFail($data['building_id'])->name;
+        $data['floor'] = Floor::findOrFail($data['floor_id'])->name;
+        $data['room'] = Room::findOrFail($data['room_id'])->name;
     }
 }

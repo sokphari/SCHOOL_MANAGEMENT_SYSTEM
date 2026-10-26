@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRightFromBracket,
   faBookOpen,
+  faBuilding,
   faCalendarCheck,
   faChalkboardUser,
   faChevronDown,
@@ -22,6 +23,7 @@ const menuIcons = {
   Students: faUsers,
   Teachers: faChalkboardUser,
   Classes: faBookOpen,
+  Facilities: faBuilding,
   Attendance: faCalendarCheck,
   Requests: faClipboardList,
   Settings: faGear,
@@ -71,12 +73,13 @@ export default function Sidebar({ isOpen, onNavigate }) {
           const isStudents = item.label === "Students";
           const isTeachers = item.label === "Teachers";
           const isClasses = item.label === "Classes";
-          if (isStudents || isTeachers || isClasses) {
+          const isExpandable = isStudents || isTeachers || isClasses;
+          if (isExpandable) {
             const expanded = isStudents ? studentsExpanded : isTeachers ? teachersExpanded : classesExpanded;
             const setExpanded = isStudents ? setStudentsExpanded : isTeachers ? setTeachersExpanded : setClassesExpanded;
             const isActiveGroup = location.pathname.startsWith(item.path);
             const submenuId = `${item.label.toLowerCase()}-submenu`;
-            const createLabel = isTeachers ? "Teacher" : isClasses ? "Class" : "Student";
+            const createLabel = isStudents ? "Student" : isTeachers ? "Teacher" : "Class";
 
             return (
             <div key={item.path}>

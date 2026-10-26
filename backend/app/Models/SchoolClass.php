@@ -18,6 +18,9 @@ class SchoolClass extends Model
         'delivery_mode',
         'section',
         'academic_year',
+        'building_id',
+        'floor_id',
+        'room_id',
         'building',
         'floor',
         'room',
@@ -38,6 +41,21 @@ class SchoolClass extends Model
     public function teacher()
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    public function buildingLocation()
+    {
+        return $this->belongsTo(Building::class, 'building_id');
+    }
+
+    public function floorLocation()
+    {
+        return $this->belongsTo(Floor::class, 'floor_id');
+    }
+
+    public function roomLocation()
+    {
+        return $this->belongsTo(Room::class, 'room_id');
     }
 
     public function students()

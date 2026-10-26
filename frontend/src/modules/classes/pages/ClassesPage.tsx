@@ -343,9 +343,9 @@ function ClassCard({ classItem, isAdmin, busy, onView, onAddStudent, onEdit, onS
         <InfoRow label="Class type" value={<TagBadge tone={classItem.delivery_mode === "online" ? "blue" : classItem.delivery_mode === "hybrid" ? "purple" : "emerald"}>{classItem.delivery_mode || "Physical"}</TagBadge>} />
         <InfoRow label="Academic year" value={classItem.academic_year || "—"} />
         <InfoRow label="Students" value={<span className="inline-flex items-center gap-1.5"><span className="font-semibold text-brand">{classItem.students_count ?? 0}</span><span className="text-xs text-muted">enrolled</span></span>} />
-        <InfoRow label="Room" value={<span className="inline-flex items-center gap-1.5"><FontAwesomeIcon icon={faDoorOpen} className="text-xs text-brand" />{classItem.room || "Not assigned"}</span>} />
-        <InfoRow label="Building" value={classItem.building || "Building A"} />
-        <InfoRow label="Floor" value={classItem.floor || "Floor 1"} />
+        <InfoRow label="Room" value={<span className="inline-flex items-center gap-1.5"><FontAwesomeIcon icon={faDoorOpen} className="text-xs text-brand" />{classItem.roomLocation?.name || classItem.room || "Not assigned"}</span>} />
+        <InfoRow label="Building" value={classItem.buildingLocation?.name || classItem.building || "—"} />
+        <InfoRow label="Floor" value={classItem.floorLocation?.name || classItem.floor || "—"} />
         <InfoRow label="Term" value={classItem.term || "Term 1"} />
         <InfoRow label="Time" value={classItem.time || "08:00 AM – 09:00 AM"} />
         <InfoRow label="Teacher" value={classItem.teacher ? <TagBadge tone="blue"><FontAwesomeIcon icon={faChalkboardUser} />{classItem.teacher.first_name} {classItem.teacher.last_name}</TagBadge> : "Unassigned"} />

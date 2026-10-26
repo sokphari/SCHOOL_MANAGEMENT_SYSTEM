@@ -10,6 +10,12 @@ export interface SchoolClass {
   section: string | null;
   academic_year: string;
   room: string | null;
+  building_id?: number | null;
+  floor_id?: number | null;
+  room_id?: number | null;
+  buildingLocation?: { id: number; name: string; code: string | null } | null;
+  floorLocation?: { id: number; name: string; code: string | null } | null;
+  roomLocation?: { id: number; name: string; code: string | null } | null;
   course?: string | null;
   building?: string | null;
   floor?: string | null;
@@ -54,9 +60,9 @@ export interface ClassForm {
   delivery_mode: ClassDeliveryMode;
   section: string;
   academic_year: string;
-  building: string;
-  floor: string;
-  room: string;
+  building_id: string;
+  floor_id: string;
+  room_id: string;
   term: string;
   time: string;
   teacher_id: string;
@@ -64,7 +70,12 @@ export interface ClassForm {
   status: ClassStatus;
 }
 
-export type ClassPayload = Omit<ClassForm, "teacher_id" | "delivery_mode"> & { teacher_id: number | null; delivery_mode: ClassDeliveryMode };
+export type ClassPayload = Omit<ClassForm, "teacher_id" | "building_id" | "floor_id" | "room_id"> & {
+  teacher_id: number | null;
+  building_id: number;
+  floor_id: number;
+  room_id: number;
+};
 export type ClassValidationErrors = Partial<Record<keyof ClassForm, string[]>>;
 export interface ClassQuery extends Partial<ClassFilters> { per_page?: number }
 export interface TeacherOption { label: string; value: string }

@@ -19,6 +19,7 @@ const menuItems = [
     path: "/admin/classes",
     roles: ["admin", "teacher"],
   },
+  { label: "Facilities", path: "/admin/facilities", roles: ["admin"] },
   {
     label: "Attendance",
     path: "/admin/attendance",

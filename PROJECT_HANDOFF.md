@@ -425,10 +425,8 @@ repeating discovery work.
 ## Follow-up — Class card schedule and location fields (2026-10-26)
 
 - Added Course, Building, Floor, Term, and Time to class cards and removed
-  Description from the card view. The API does not yet provide these fields, so
-  the card uses static defaults for course context, Building A, Floor 1, Term 1,
-  and 08:00–09:00; optional API fields can replace those defaults later.
-- No dependencies or database migrations were added.
+  Description from the card view. Location names initially used defaults until
+  the location management module was implemented below.
 
 ## Follow-up — Class course, mode, location, and schedule fields (2026-10-26)
 
@@ -440,6 +438,36 @@ repeating discovery work.
   longer show the description.
 - No dependencies were added. Apply pending database migrations with
   `cd backend && php artisan migrate` when the database service is available.
+
+## Follow-up — Facilities management (2026-10-26)
+
+- Replaced separate Building, Floor, and Room sidebar sections with one Admin-
+  only Facilities page at `/admin/facilities`. Previous paths redirect there.
+- The page uses one eager-loaded Buildings → Floors → Rooms tree for selection,
+  floor accordions, room search/type/status filters, and real record details.
+  Statistics are computed from real records, including total
+  room capacity when available. Child locations/class assignments prevent
+  deleting their parent.
+- Building, floor, and room create/edit actions navigate to full pages with
+  complete forms, inline API validation, saving states, and context-aware return
+  navigation. Room details also have a dedicated page; no Facilities forms or
+  detail views use modal dialogs.
+- Added floor number and room type fields with server validation. Room type
+  options include Classroom, Computer lab, Office, Meeting room, Library, and
+  Other. Building/floor/room relationships are checked by the API.
+- Create/Edit Class selects active Building → Floor → Room relationships; the
+  backend persists foreign keys and keeps readable location name snapshots.
+- No dependencies were added. Apply pending migrations with
+  `cd backend && php artisan migrate` when the database service is available.
+- Verification for this follow-up: `frontend/npm run typecheck` and
+  `frontend/npm run build` passed. `git diff --check`, PHP syntax checks for the
+  location models/controller and migrations, and
+  `php artisan route:list --path=locations --except-vendor` passed (12 routes).
+  `php artisan test --filter=ApiEndpointsTest` could not execute assertions
+  because this PHP environment does not have the PDO SQLite driver installed;
+  enable `pdo_sqlite` or run the suite in the project's configured test
+  environment before relying on runtime database coverage. The production build
+  still reports the existing large JavaScript chunk warning (>500 kB).
 
 ### Demo login
 

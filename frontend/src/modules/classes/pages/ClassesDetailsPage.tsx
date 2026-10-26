@@ -254,9 +254,9 @@ export default function ClassDetailPage() {
           <SummaryItem icon={faBookOpen} label="Lesson" value={classData.lesson || "General studies"} />
           <SummaryItem icon={faBookOpen} label="Class type" value={classData.delivery_mode || "Physical"} />
           <SummaryItem icon={faCalendarDays} label="Academic year" value={classData.academic_year || "—"} />
-          <SummaryItem icon={faDoorOpen} label="Building" value={classData.building || "Building A"} />
-          <SummaryItem icon={faDoorOpen} label="Floor" value={classData.floor || "Floor 1"} />
-          <SummaryItem icon={faDoorOpen} label="Room" value={classData.room || "Not assigned"} />
+          <SummaryItem icon={faDoorOpen} label="Building" value={classData.buildingLocation?.name || classData.building || "—"} />
+          <SummaryItem icon={faDoorOpen} label="Floor" value={classData.floorLocation?.name || classData.floor || "—"} />
+          <SummaryItem icon={faDoorOpen} label="Room" value={classData.roomLocation?.name || classData.room || "Not assigned"} />
           <SummaryItem icon={faCalendarDays} label="Term" value={classData.term || "Term 1"} />
           <SummaryItem icon={faCalendarCheck} label="Time" value={classData.time || "08:00 AM – 09:00 AM"} />
           <SummaryItem icon={faChalkboardUser} label="Teacher" value={classData.teacher ? `${classData.teacher.first_name} ${classData.teacher.last_name}` : "Unassigned"} />

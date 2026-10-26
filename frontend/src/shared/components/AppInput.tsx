@@ -8,6 +8,7 @@ interface AppInputProps {
   type?: string;
   placeholder?: string;
   error?: string;
+  required?: boolean;
   containerClassName?: string;
 }
 
@@ -19,6 +20,7 @@ export default function AppInput({
   type = "text",
   placeholder = "",
   error = "",
+  required = false,
   containerClassName = "mb-4",
 }: AppInputProps) {
   return (
@@ -28,6 +30,7 @@ export default function AppInput({
         id={name}
         type={type}
         name={name}
+        required={required}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

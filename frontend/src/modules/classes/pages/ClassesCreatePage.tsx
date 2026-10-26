@@ -5,34 +5,39 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { createClass } from "@/modules/classes/api/classApi.ts";
 import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
+import { getBuildings } from "@/modules/locations/api/locationApi.ts";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { ClassForm, ClassPayload, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
+import type { BuildingLocation } from "@/modules/locations/types/location";
 
 const fieldClass = "mb-0";
 
 export default function ClassCreatePage() {
   const navigate = useNavigate();
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [buildings, setBuildings] = useState<BuildingLocation[]>([]);
   const [form, setForm] = useState<ClassForm>({
-    name: "", course: "", lesson: "", delivery_mode: "physical", section: "", academic_year: "", building: "", floor: "", room: "", term: "", time: "", teacher_id: "", description: "", status: "active",
+    name: "", course: "", lesson: "", delivery_mode: "physical", section: "", academic_year: "", building_id: "", floor_id: "", room_id: "", term: "", time: "", teacher_id: "", description: "", status: "active",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
 
   useEffect(() => {
     let active = true;
-    getTeachers()
-      .then((response) => {
-        if (active) setTeachers((response.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
+    Promise.all([getTeachers(), getBuildings()])
+      .then(([teacherResponse, buildingResponse]) => {
+        if (!active) return;
+        setTeachers((teacherResponse.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
+        setBuildings(buildingResponse.data || []);
       })
-      .catch((error) => console.error("Failed to load teachers", error));
+      .catch((error) => console.error("Failed to load class options", error));
     return () => { active = false; };
   }, []);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.currentTarget;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({ ...current, [name]: value, ...(name === "building_id" ? { floor_id: "", room_id: "" } : {}), ...(name === "floor_id" ? { room_id: "" } : {}) }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
 
@@ -41,7 +46,7 @@ export default function ClassCreatePage() {
     setLoading(true);
     setErrors({});
     try {
-      const payload: ClassPayload = { ...form, teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
+      const payload: ClassPayload = { ...form, building_id: Number(form.building_id), floor_id: Number(form.floor_id), room_id: Number(form.room_id), teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
       await createClass(payload);
       alert("Class created successfully");
       navigate("/admin/classes");
@@ -72,9 +77,9 @@ export default function ClassCreatePage() {
               <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" value={form.delivery_mode} onChange={handleChange} placeholder="Select class type" options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
               <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} placeholder="e.g. A" error={errors.section?.[0]} />
               <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} placeholder="e.g. 2026–2027" error={errors.academic_year?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Building" name="building" value={form.building} onChange={handleChange} placeholder="e.g. Building A" error={errors.building?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Floor" name="floor" value={form.floor} onChange={handleChange} placeholder="e.g. Floor 1" error={errors.floor?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Room" name="room" value={form.room} onChange={handleChange} placeholder="e.g. Room 101" error={errors.room?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Building" name="building_id" value={form.building_id} onChange={handleChange} placeholder="Select building" options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" value={form.floor_id} onChange={handleChange} placeholder="Select floor" options={(buildings.find((building) => building.id === Number(form.building_id))?.floors || []).filter((floor) => floor.status === "active").map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Room" name="room_id" value={form.room_id} onChange={handleChange} placeholder="Select room" options={(buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms || []).filter((room) => room.status === "active").map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />
               <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} placeholder="e.g. Mon & Thu" error={errors.term?.[0]} />
               <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} />
             </div>
