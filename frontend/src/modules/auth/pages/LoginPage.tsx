@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -52,6 +52,12 @@ export default function LoginPage() {
     }
   };
 
+  const handleFieldChange = (field: keyof LoginCredentials) => (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.currentTarget.value;
+    setForm((current) => ({ ...current, [field]: value }));
+    setError("");
+  };
+
   return (
     <main data-theme={theme} className="login-shell grid min-h-screen bg-app-bg text-primary transition-colors duration-200 lg:grid-cols-[minmax(0,1.05fr)_minmax(520px,0.95fr)]">
       <section className="relative hidden overflow-hidden bg-[#211832] px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-16 xl:py-14">
@@ -89,14 +95,14 @@ export default function LoginPage() {
 
             <div className="mb-5">
               <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-secondary">Email address</label>
-              <input id="login-email" name="email" type="email" autoComplete="username" autoFocus required value={form.email} onChange={(event) => { setForm((current) => ({ ...current, email: event.currentTarget.value })); setError(""); }} placeholder="you@school.com" className="w-full rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
+              <input id="login-email" name="email" type="email" autoComplete="username" autoFocus required value={form.email} onChange={handleFieldChange("email")} placeholder="you@school.com" className="w-full rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
             </div>
 
             <div className="mb-7">
               <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-secondary">Password</label>
               <div className="relative">
                 <FontAwesomeIcon icon={faLock} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-muted" />
-                <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required value={form.password} onChange={(event) => { setForm((current) => ({ ...current, password: event.currentTarget.value })); setError(""); }} placeholder="Enter your password" className="w-full rounded-lg border border-border bg-surface py-3.5 pl-10 pr-12 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required value={form.password} onChange={handleFieldChange("password")} placeholder="Enter your password" className="w-full rounded-lg border border-border bg-surface py-3.5 pl-10 pr-12 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
                 <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted transition hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} /></button>
               </div>
             </div>

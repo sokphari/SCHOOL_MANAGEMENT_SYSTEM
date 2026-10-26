@@ -54,6 +54,7 @@ export default function AttendancePage() {
   const [submitting, setSubmitting] = useState(false);
   const [grantingPermission, setGrantingPermission] = useState(false);
   const [teacherLocked, setTeacherLocked] = useState(false);
+  const [classAttendanceClosed, setClassAttendanceClosed] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const loadRequestRef = useRef(0);
@@ -94,6 +95,8 @@ export default function AttendancePage() {
         getAttendanceByClassAndDate(selectedClass, attendanceDate),
       ]);
       if (requestId !== loadRequestRef.current) return;
+      const schoolClass = classResponse.data;
+      setClassAttendanceClosed(schoolClass.status !== "active" || Boolean(schoolClass.pre_end_at) || Boolean(schoolClass.end_date && attendanceDate > schoolClass.end_date));
       const classStudents = classResponse.data.students || [];
       const attendanceRecords = attendanceResponse.data || [];
       setTeacherLocked(user?.role === "teacher" && attendanceRecords.length > 0);
@@ -145,13 +148,14 @@ export default function AttendancePage() {
     setSelectedClass(classId);
     setRecords([]);
     setTeacherLocked(false);
+    setClassAttendanceClosed(false);
     setDirty(false);
     setPermissionStudentId("");
     setMessage(null);
   };
 
   const persistAttendance = async (nextRecords: AttendanceDraft[]) => {
-    if (!selectedClass || !attendanceDate || nextRecords.length === 0 || teacherLocked || submitting) return;
+    if (!selectedClass || !attendanceDate || nextRecords.length === 0 || teacherLocked || classAttendanceClosed || submitting) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -175,7 +179,7 @@ export default function AttendancePage() {
   };
 
   const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
-    if (teacherLocked || submitting) return;
+    if (teacherLocked || classAttendanceClosed || submitting) return;
     const nextRecords = records.map((record) => record.student_id === studentId ? { ...record, status } : record);
     setRecords(nextRecords);
     setDirty(true);
@@ -184,14 +188,14 @@ export default function AttendancePage() {
   };
 
   const handleNoteChange = (studentId: number, note: string) => {
-    if (teacherLocked || submitting) return;
+    if (teacherLocked || classAttendanceClosed || submitting) return;
     setRecords((current) => current.map((record) => record.student_id === studentId ? { ...record, note } : record));
     setDirty(true);
     setMessage(null);
   };
 
   const handleGrantPermissionRange = async () => {
-    if (user?.role !== "admin" || !selectedClass || !permissionStudentId || !permissionStartDate || !permissionEndDate || !permissionReason.trim() || grantingPermission) return;
+    if (user?.role !== "admin" || !selectedClass || classAttendanceClosed || !permissionStudentId || !permissionStartDate || !permissionEndDate || !permissionReason.trim() || grantingPermission) return;
     if (permissionEndDate < permissionStartDate) {
       setMessage({ type: "error", text: "The end date must be on or after the start date." });
       return;
@@ -241,7 +245,7 @@ export default function AttendancePage() {
           {attendanceOptions.map((option) => {
             const selected = record.status === option.value;
             const permissionUnavailable = option.value === "excused" && user?.role === "teacher" && permissionAvailability[String(record.student_id)] !== true;
-            const disabled = teacherLocked || submitting || permissionUnavailable;
+            const disabled = teacherLocked || classAttendanceClosed || submitting || permissionUnavailable;
             const title = permissionUnavailable ? "This student has already received permission this week" : option.value === "excused" ? "For in-person student requests; one permission per student per week" : option.label;
             return <button key={option.value} type="button" aria-pressed={selected} title={title} disabled={disabled} onClick={() => handleStatusChange(record.student_id, option.value)} className={`min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
           })}
@@ -251,7 +255,7 @@ export default function AttendancePage() {
     {
       key: "note",
       title: "Note",
-      render: (record) => <input aria-label={`Note for ${record.student_name}`} value={record.note} onChange={(event) => handleNoteChange(record.student_id, event.currentTarget.value)} onBlur={() => { if (dirty && !submitting) void persistAttendance(records); }} disabled={teacherLocked || submitting} placeholder="Optional note" className="min-w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-60" />,
+      render: (record) => <input aria-label={`Note for ${record.student_name}`} value={record.note} onChange={(event) => handleNoteChange(record.student_id, event.currentTarget.value)} onBlur={() => { if (dirty && !submitting) void persistAttendance(records); }} disabled={teacherLocked || classAttendanceClosed || submitting} placeholder="Optional note" className="min-w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-60" />,
     },
   ];
 
@@ -288,6 +292,8 @@ export default function AttendancePage() {
 
       {message && <div role="status" className={`rounded-xl border px-4 py-3 text-sm ${message.type === "success" ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" : "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"}`}>{message.text}</div>}
 
+      {classAttendanceClosed && <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">Attendance tracking is unavailable because this class is pre-ended, inactive, or past its scheduled end date.</div>}
+
       {user?.role === "admin" && records.length > 0 && <section className="rounded-2xl border border-brand/20 bg-surface p-4 shadow-card sm:p-5">
         <div className="mb-4 flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"><FontAwesomeIcon icon={faCalendarDays} /></span>
@@ -298,7 +304,7 @@ export default function AttendancePage() {
           <div><label htmlFor="permission-start-date" className="mb-1.5 block text-[13px] font-semibold text-secondary">2. From</label><input id="permission-start-date" type="date" value={permissionStartDate} onChange={(event) => setPermissionStartDate(event.currentTarget.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" /></div>
           <div><label htmlFor="permission-end-date" className="mb-1.5 block text-[13px] font-semibold text-secondary">Through</label><input id="permission-end-date" type="date" min={permissionStartDate} value={permissionEndDate} onChange={(event) => setPermissionEndDate(event.currentTarget.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" /></div>
           <div><label htmlFor="permission-reason" className="mb-1.5 block text-[13px] font-semibold text-secondary">3. Reason <span className="text-rose-500">*</span></label><input id="permission-reason" required value={permissionReason} onChange={(event) => setPermissionReason(event.currentTarget.value)} placeholder="e.g. Family trip to hometown" className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" /></div>
-          <button type="button" onClick={() => void handleGrantPermissionRange()} disabled={!permissionStudentId || !permissionReason.trim() || grantingPermission || loading} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{grantingPermission ? "Granting…" : "4. Grant permission"}</button>
+          <button type="button" onClick={() => void handleGrantPermissionRange()} disabled={!permissionStudentId || !permissionReason.trim() || grantingPermission || loading || classAttendanceClosed} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{grantingPermission ? "Granting…" : "4. Grant permission"}</button>
         </div>
         <p className="mb-0 mt-2 text-xs text-muted">Attendance status changes save automatically. Grant permission saves the selected date range.</p>
       </section>}

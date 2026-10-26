@@ -2,6 +2,7 @@ import type { Student } from "@/modules/students/types/student";
 import type { Teacher } from "@/modules/teachers/types/teacher";
 
 export type ClassStatus = "active" | "inactive";
+export type ClassDeliveryMode = "physical" | "hybrid" | "online";
 
 export interface SchoolClass {
   id: number;
@@ -9,10 +10,19 @@ export interface SchoolClass {
   section: string | null;
   academic_year: string;
   room: string | null;
+  course?: string | null;
+  building?: string | null;
+  floor?: string | null;
+  term?: string | null;
+  time?: string | null;
+  lesson?: string | null;
+  delivery_mode?: ClassDeliveryMode | null;
   teacher_id: number | null;
   students_count?: number;
   description: string | null;
   status: ClassStatus;
+  end_date?: string | null;
+  pre_end_at?: string | null;
   teacher?: Pick<Teacher, "id" | "first_name" | "last_name"> | null;
   students?: ClassStudent[];
   created_at?: string;
@@ -39,15 +49,22 @@ export interface ClassFilters {
 
 export interface ClassForm {
   name: string;
+  course: string;
+  lesson: string;
+  delivery_mode: ClassDeliveryMode;
   section: string;
   academic_year: string;
+  building: string;
+  floor: string;
   room: string;
+  term: string;
+  time: string;
   teacher_id: string;
   description: string;
   status: ClassStatus;
 }
 
-export type ClassPayload = Omit<ClassForm, "teacher_id"> & { teacher_id: number | null };
+export type ClassPayload = Omit<ClassForm, "teacher_id" | "delivery_mode"> & { teacher_id: number | null; delivery_mode: ClassDeliveryMode };
 export type ClassValidationErrors = Partial<Record<keyof ClassForm, string[]>>;
 export interface ClassQuery extends Partial<ClassFilters> { per_page?: number }
 export interface TeacherOption { label: string; value: string }

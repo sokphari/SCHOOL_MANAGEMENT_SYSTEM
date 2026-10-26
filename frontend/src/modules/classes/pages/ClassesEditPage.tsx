@@ -32,9 +32,16 @@ export default function ClassEditPage() {
         setTeachers((teacherResponse.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
         setForm({
           name: data.name || "",
+          course: data.course || data.name || "",
+          lesson: data.lesson || "General studies",
+          delivery_mode: data.delivery_mode || "physical",
           section: data.section || "",
           academic_year: data.academic_year || "",
+          building: data.building || "Building A",
+          floor: data.floor || "Floor 1",
           room: data.room || "",
+          term: data.term || "Term 1",
+          time: data.time || "08:00",
           teacher_id: data.teacher_id ? String(data.teacher_id) : "",
           description: data.description || "",
           status: data.status || "active",
@@ -88,12 +95,19 @@ export default function ClassEditPage() {
 
         <div className="space-y-4 p-4 sm:p-5">
           <section>
-            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Class information</h2><p className="mb-0 mt-1 text-xs text-secondary">Update the class name, section, year, and room.</p></div>
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Class information</h2><p className="mb-0 mt-1 text-xs text-secondary">Update the course, lesson, class type, schedule, and location.</p></div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
               <AppInput containerClassName={fieldClass} label="Class name" name="name" value={form.name} onChange={handleChange} error={errors.name?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Course" name="course" value={form.course} onChange={handleChange} error={errors.course?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Lesson" name="lesson" value={form.lesson} onChange={handleChange} error={errors.lesson?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" value={form.delivery_mode} onChange={handleChange} options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
               <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} error={errors.section?.[0]} />
               <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} error={errors.academic_year?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Building" name="building" value={form.building} onChange={handleChange} error={errors.building?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Floor" name="floor" value={form.floor} onChange={handleChange} error={errors.floor?.[0]} />
               <AppInput containerClassName={fieldClass} label="Room" name="room" value={form.room} onChange={handleChange} error={errors.room?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} error={errors.term?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} />
             </div>
           </section>
 
@@ -101,7 +115,6 @@ export default function ClassEditPage() {
             <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Teaching details</h2><p className="mb-0 mt-1 text-xs text-secondary">Assign a teacher, update status, and edit the description.</p></div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
               <AppSelect containerClassName={fieldClass} label="Teacher (optional)" name="teacher_id" value={form.teacher_id} onChange={handleChange} placeholder="Unassigned" options={teachers} error={errors.teacher_id?.[0]} />
-              <AppSelect containerClassName={fieldClass} label="Status" name="status" value={form.status} onChange={handleChange} options={[{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} error={errors.status?.[0]} />
               <div className="min-w-0 sm:col-span-2 xl:col-span-4">
                 <label htmlFor="description" className="mb-1.5 block text-[13px] font-semibold text-secondary">Description (optional)</label>
                 <textarea id="description" name="description" rows={2} value={form.description} onChange={handleChange} placeholder="Add class details" aria-invalid={Boolean(errors.description?.[0])} className={`w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 ${errors.description?.[0] ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`} />

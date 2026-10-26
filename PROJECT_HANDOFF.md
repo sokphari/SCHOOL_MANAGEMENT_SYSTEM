@@ -352,6 +352,8 @@ repeating discovery work.
   card padding for easier reading and use.
 - Increased the Login card's vertical spacing and minimum height to 370px
   (400px on larger screens), keeping it centered in the available viewport.
+- Fixed Login input changes by reading the input value before the deferred state
+  updater, preventing `currentTarget.value` from being read after the event ends.
 - Migrated LoginPage to TypeScript and updated its router import to `.tsx`.
 - No dependencies were added or changed. `npm run typecheck` passed after the
   migration.
@@ -366,6 +368,78 @@ repeating discovery work.
   shown if the request fails.
 - Migrated HomePage and publicSettingApi to TypeScript and updated the router
   import. No dependencies were added or changed. `npm run typecheck` passed.
+
+## Follow-up — Class card actions (2026-10-26)
+
+- Added an Admin-only vertical-more menu beside each Class card's status badge
+  with Add student, Edit class, and Delete class actions. Removed the duplicate
+  edit/delete icon buttons from the card footer; View class remains available.
+- Add student opens a class-specific dialog, loads active students, excludes
+  students already enrolled, and identifies one student by exact name, gender,
+  and telephone number before using the existing class assignment API. It asks
+  for correction if there is no unique match. The class list refreshes after a
+  successful assignment.
+- No dependencies were added or changed. `npm run typecheck` passed.
+
+## Follow-up — Class end lifecycle (2026-10-26)
+
+- Replaced class deletion actions in the Class list UI with End Class scheduling
+  and Pre-End actions. End Class opens a date picker; tracking is allowed only
+  through the chosen final attendance date, then stops. Pre-End stops tracking
+  immediately. Ended/Pre-End classes
+  show lifecycle badges, and admins can resume a class to clear its pre-end and
+  scheduled end date.
+- Added nullable `end_date` and `pre_end_at` fields through a new migration and
+  typed class API fields/actions. Class Details and the Attendance page disable
+  attendance tracking for inactive, pre-ended, or ended classes.
+- Added backend guards to bulk/single attendance and permission-range writes so
+  closed classes cannot receive attendance records, even if a client bypasses
+  the disabled controls.
+- `npm run typecheck`, `git diff --check`, and PHP syntax checks passed. The
+  migration was not applied here: `php artisan migrate:status` could not resolve
+  the configured MySQL host `mysql`, and Laravel could not append to its log.
+  Apply the migration when the project's database service is running:
+  `cd backend && php artisan migrate`.
+
+## Follow-up — Transfer students between classes (2026-10-26)
+
+- Added an Admin-only transfer action to each student row in Class Details. The
+  dialog identifies the source class and accepts a destination class ID; it
+  confirms the matching eligible class by name and section before transfer.
+- Added an authenticated API endpoint that takes the source class ID and student
+  ID from the route and the destination class ID from the request. The backend
+  validates enrollment and destination eligibility, then atomically removes
+  the source enrollment and adds the destination enrollment.
+- Attendance records in the source class remain unchanged as historical data.
+- No dependencies or database migrations were added.
+
+## Follow-up — Switch class teacher (2026-10-26)
+
+- Added an Admin-only “Switch teacher” action to the class card's More menu.
+  The dialog shows the class ID and accepts a teacher ID; the backend validates
+  that teacher exists before assigning them to the class.
+- Added an authenticated class teacher assignment endpoint. The class list
+  refreshes after a successful change so the updated teacher is visible.
+- No dependencies or database migrations were added.
+
+## Follow-up — Class card schedule and location fields (2026-10-26)
+
+- Added Course, Building, Floor, Term, and Time to class cards and removed
+  Description from the card view. The API does not yet provide these fields, so
+  the card uses static defaults for course context, Building A, Floor 1, Term 1,
+  and 08:00–09:00; optional API fields can replace those defaults later.
+- No dependencies or database migrations were added.
+
+## Follow-up — Class course, mode, location, and schedule fields (2026-10-26)
+
+- Added Course, Lesson, Class type (Physical, Hybrid, Online), Building, Floor,
+  Room, Term, and Time to Create/Edit Class. Class type is stored separately
+  from the existing Active/Inactive lifecycle status.
+- Added nullable database columns, model fillable fields, and request validation.
+  Class cards now display saved values (with defaults for older rows), and no
+  longer show the description.
+- No dependencies were added. Apply pending database migrations with
+  `cd backend && php artisan migrate` when the database service is available.
 
 ### Demo login
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules\Attendance\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modules\Attendance\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\SchoolClass;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -46,6 +47,12 @@ class AttendanceController extends Controller
         }
 
         $data = $request->validated();
+
+        if ($this->attendanceTrackingBlocked($class, $data['attendance_date'])) {
+            return response()->json([
+                'message' => $this->attendanceBlockedMessage($class),
+            ], 403);
+        }
 
         if ($user->role === 'teacher') {
             $permissionStudentIds = collect($data['records'])
@@ -114,6 +121,13 @@ class AttendanceController extends Controller
         $data = $request->validate(['date' => ['required', 'date']]);
         $user = auth()->user();
 
+        if ($this->attendanceTrackingBlocked($class, $data['date'])) {
+            return response()->json([
+                'message' => $this->attendanceBlockedMessage($class),
+                'availability' => [],
+            ], 403);
+        }
+
         if ($user->role === 'teacher') {
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
             if (!$teacher || $class->teacher_id !== $teacher->id) {
@@ -145,6 +159,13 @@ class AttendanceController extends Controller
     public function store(StoreAttendanceRequest $request)
     {
         $data = $request->validated();
+
+        $class = SchoolClass::findOrFail($data['school_class_id']);
+        if ($this->attendanceTrackingBlocked($class, $data['attendance_date'])) {
+            return response()->json([
+                'message' => $this->attendanceBlockedMessage($class),
+            ], 403);
+        }
 
         $user = auth()->user();
         if ($user->role === 'teacher' && $data['status'] === 'excused') {
@@ -202,6 +223,12 @@ class AttendanceController extends Controller
             'note' => ['required', 'string', 'max:1000'],
         ]);
 
+        if ($this->attendanceTrackingBlocked($class, $data['start_date']) || $this->attendanceTrackingBlocked($class, $data['end_date'])) {
+            return response()->json([
+                'message' => $this->attendanceBlockedMessage($class),
+            ], 403);
+        }
+
         $studentIsInClass = $class->students()->where('students.id', $data['student_id'])->exists();
         if (!$studentIsInClass) {
             return response()->json(['message' => 'The selected student is not assigned to this class.'], 422);
@@ -253,5 +280,23 @@ class AttendanceController extends Controller
             ->get();
 
         return response()->json($attendances);
+    }
+
+    private function attendanceTrackingBlocked(SchoolClass $class, string $date): bool
+    {
+        return $class->status !== 'active'
+            || $class->pre_end_at !== null
+            || ($class->end_date !== null && Carbon::parse($date)->greaterThan(Carbon::parse($class->end_date)->startOfDay()));
+    }
+
+    private function attendanceBlockedMessage(SchoolClass $class): string
+    {
+        if ($class->pre_end_at !== null) {
+            return 'Attendance tracking is disabled because this class is in pre-end.';
+        }
+        if ($class->status !== 'active') {
+            return 'Attendance tracking is disabled because this class is inactive.';
+        }
+        return 'Attendance tracking is disabled on or after the scheduled class end date.';
     }
 }

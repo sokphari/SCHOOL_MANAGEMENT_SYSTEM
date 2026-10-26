@@ -15,7 +15,7 @@ export default function ClassCreatePage() {
   const navigate = useNavigate();
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [form, setForm] = useState<ClassForm>({
-    name: "", section: "", academic_year: "", room: "", teacher_id: "", description: "", status: "active",
+    name: "", course: "", lesson: "", delivery_mode: "physical", section: "", academic_year: "", building: "", floor: "", room: "", term: "", time: "", teacher_id: "", description: "", status: "active",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
@@ -64,12 +64,19 @@ export default function ClassCreatePage() {
 
         <div className="space-y-4 p-4 sm:p-5">
           <section>
-            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Class information</h2><p className="mb-0 mt-1 text-xs text-secondary">Set the class name, section, year, and room.</p></div>
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Class information</h2><p className="mb-0 mt-1 text-xs text-secondary">Enter the course, lesson, class type, and location.</p></div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
               <AppInput containerClassName={fieldClass} label="Class name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. PHP + Laravel" error={errors.name?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Course" name="course" value={form.course} onChange={handleChange} placeholder="e.g. Web Development" error={errors.course?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Lesson" name="lesson" value={form.lesson} onChange={handleChange} placeholder="e.g. Project Laravel" error={errors.lesson?.[0]} />
+              <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" value={form.delivery_mode} onChange={handleChange} placeholder="Select class type" options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
               <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} placeholder="e.g. A" error={errors.section?.[0]} />
               <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} placeholder="e.g. 2026–2027" error={errors.academic_year?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Building" name="building" value={form.building} onChange={handleChange} placeholder="e.g. Building A" error={errors.building?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Floor" name="floor" value={form.floor} onChange={handleChange} placeholder="e.g. Floor 1" error={errors.floor?.[0]} />
               <AppInput containerClassName={fieldClass} label="Room" name="room" value={form.room} onChange={handleChange} placeholder="e.g. Room 101" error={errors.room?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} placeholder="e.g. Mon & Thu" error={errors.term?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} />
             </div>
           </section>
 
@@ -77,7 +84,6 @@ export default function ClassCreatePage() {
             <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Teaching details</h2><p className="mb-0 mt-1 text-xs text-secondary">Optionally assign a teacher and add a description.</p></div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
               <AppSelect containerClassName={fieldClass} label="Teacher (optional)" name="teacher_id" value={form.teacher_id} onChange={handleChange} placeholder="Unassigned" options={teachers} error={errors.teacher_id?.[0]} />
-              <AppSelect containerClassName={fieldClass} label="Status" name="status" value={form.status} onChange={handleChange} options={[{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} error={errors.status?.[0]} />
               <div className="min-w-0 sm:col-span-2 xl:col-span-4">
                 <label htmlFor="description" className="mb-1.5 block text-[13px] font-semibold text-secondary">Description (optional)</label>
                 <textarea id="description" name="description" rows={2} value={form.description} onChange={handleChange} placeholder="Add class details" aria-invalid={Boolean(errors.description?.[0])} className={`w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 ${errors.description?.[0] ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`} />

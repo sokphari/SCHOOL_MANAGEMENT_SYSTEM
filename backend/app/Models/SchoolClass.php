@@ -13,12 +13,26 @@ class SchoolClass extends Model
 
     protected $fillable = [
         'name',
+        'course',
+        'lesson',
+        'delivery_mode',
         'section',
         'academic_year',
+        'building',
+        'floor',
         'room',
+        'term',
+        'time',
         'teacher_id',
         'description',
         'status',
+        'end_date',
+        'pre_end_at',
+    ];
+
+    protected $casts = [
+        'end_date' => 'date:Y-m-d',
+        'pre_end_at' => 'datetime',
     ];
 
     public function teacher()
