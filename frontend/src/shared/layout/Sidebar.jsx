@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRightFromBracket,
   faBookOpen,
+  faBook,
   faBuilding,
   faCalendarCheck,
   faChalkboardUser,
@@ -23,6 +24,7 @@ const menuIcons = {
   Students: faUsers,
   Teachers: faChalkboardUser,
   Classes: faBookOpen,
+  Courses: faBook,
   Facilities: faBuilding,
   Attendance: faCalendarCheck,
   Requests: faClipboardList,

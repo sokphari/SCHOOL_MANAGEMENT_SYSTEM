@@ -24,6 +24,10 @@ import HomePage from "@/modules/public/pages/HomePage.tsx";
 import FacilitiesPage from "@/modules/facilities/pages/FacilitiesPage.tsx";
 import FacilitiesFormPage from "@/modules/facilities/pages/FacilitiesFormPage.tsx";
 import FacilitiesRoomDetailsPage from "@/modules/facilities/pages/FacilitiesRoomDetailsPage.tsx";
+import CoursesPage from "@/modules/courses/pages/CoursesPage.tsx";
+import CourseDetailsPage from "@/modules/courses/pages/CourseDetailsPage.tsx";
+import CourseFormPage from "@/modules/courses/pages/CourseFormPage.tsx";
+import LessonFormPage from "@/modules/courses/pages/LessonFormPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -130,6 +134,12 @@ const router = createBrowserRouter([
       { path: "facilities/rooms/create", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="room" /></RoleRoute> },
       { path: "facilities/rooms/:id/edit", element: <RoleRoute roles={["admin"]}><FacilitiesFormPage kind="room" /></RoleRoute> },
       { path: "facilities/rooms/:id", element: <RoleRoute roles={["admin"]}><FacilitiesRoomDetailsPage /></RoleRoute> },
+      { path: "courses", element: <RoleRoute roles={["admin"]}><CoursesPage /></RoleRoute> },
+      { path: "courses/create", element: <RoleRoute roles={["admin"]}><CourseFormPage /></RoleRoute> },
+      { path: "courses/:id/edit", element: <RoleRoute roles={["admin"]}><CourseFormPage /></RoleRoute> },
+      { path: "courses/:courseId/lessons/create", element: <RoleRoute roles={["admin"]}><LessonFormPage /></RoleRoute> },
+      { path: "courses/:courseId/lessons/:lessonId/edit", element: <RoleRoute roles={["admin"]}><LessonFormPage /></RoleRoute> },
+      { path: "courses/:id", element: <RoleRoute roles={["admin"]}><CourseDetailsPage /></RoleRoute> },
       { path: "locations", element: <Navigate to="/admin/facilities" replace /> },
       { path: "buildings/*", element: <Navigate to="/admin/facilities" replace /> },
       { path: "floors/*", element: <Navigate to="/admin/facilities" replace /> },

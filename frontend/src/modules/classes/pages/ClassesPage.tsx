@@ -338,8 +338,8 @@ function ClassCard({ classItem, isAdmin, busy, onView, onAddStudent, onEdit, onS
         </div>
       </div>
       <dl className="mb-4 grid grid-cols-1 gap-0.5 text-sm">
-        <InfoRow label="Course" value={classItem.course || classItem.name} />
-        <InfoRow label="Lesson" value={classItem.lesson || "General studies"} />
+        <InfoRow label="Course" value={classItem.course_record?.name || classItem.course || classItem.name} />
+        <InfoRow label="Lesson" value={classItem.lesson_record?.name || classItem.lesson || "General studies"} />
         <InfoRow label="Class type" value={<TagBadge tone={classItem.delivery_mode === "online" ? "blue" : classItem.delivery_mode === "hybrid" ? "purple" : "emerald"}>{classItem.delivery_mode || "Physical"}</TagBadge>} />
         <InfoRow label="Academic year" value={classItem.academic_year || "—"} />
         <InfoRow label="Students" value={<span className="inline-flex items-center gap-1.5"><span className="font-semibold text-brand">{classItem.students_count ?? 0}</span><span className="text-xs text-muted">enrolled</span></span>} />

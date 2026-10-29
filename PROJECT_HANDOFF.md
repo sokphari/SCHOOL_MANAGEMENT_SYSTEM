@@ -469,6 +469,43 @@ repeating discovery work.
   environment before relying on runtime database coverage. The production build
   still reports the existing large JavaScript chunk warning (>500 kB).
 
+## Follow-up — Facilities page spacing (2026-10-28)
+
+- Reworked the Facilities overview to follow the supplied template: a building
+  selector sidebar with status and floor/room counts, metric cards, selected
+  building summary/actions, compact floor rows, and room cards.
+- The building selector becomes a horizontal scroller on smaller screens. Kept
+  the existing theme, filters, CRUD routes, dependency checks, and notifications.
+- Tightened vertical spacing and card padding to reduce the page height while
+  keeping labels and controls readable.
+- `frontend/npm run typecheck` and `git diff --check` passed.
+
+## Follow-up — Courses and Lessons module (2026-10-29)
+
+- Added an Admin-only Courses catalog with full-page create/edit forms, course
+  detail pages, and full-page create/edit lesson forms. Courses store name,
+  optional code and description, status, and lesson/class counts. Lessons are
+  owned by a course and include optional order number, description, and status.
+- Added authenticated course/lesson CRUD APIs. Deletion is blocked when a course
+  has lessons or class assignments, and when a lesson is assigned to a class.
+- Added `courses`/`lessons` tables and nullable relationship IDs on
+  `school_classes`. The migration backfills distinct existing course and lesson
+  text into records and links existing classes without removing their text
+  values. Existing API clients may continue to submit the legacy text fields;
+  new Class forms submit relational IDs and display canonical names.
+- Create/Edit Class now loads active courses, then lists lessons for the chosen
+  course. The Classes list/detail pages prefer the related names and fall back
+  to existing text snapshots.
+- Demo seeder now creates five courses and ten lessons, and assigns the ten demo
+  classes to them. No dependencies were added. Apply the migration with
+  `cd backend && php artisan migrate` before using the module.
+- Verification: frontend TypeScript check and production build passed, PHP
+  syntax checks and course/lesson route discovery passed. The API feature test
+  could not reach assertions because this PHP installation lacks PDO SQLite;
+  the Courses migration was applied to the local Compose database and the demo
+  seeder created five courses and ten lessons. The production bundle still
+  reports the known >500 kB chunk warning.
+
 ### Demo login
 
 After migrations, run `cd backend && php artisan db:seed` to seed demo records.

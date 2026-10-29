@@ -15,6 +15,8 @@ class SchoolClass extends Model
         'name',
         'course',
         'lesson',
+        'course_id',
+        'lesson_id',
         'delivery_mode',
         'section',
         'academic_year',
@@ -41,6 +43,16 @@ class SchoolClass extends Model
     public function teacher()
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    public function courseRecord()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function lessonRecord()
+    {
+        return $this->belongsTo(Lesson::class, 'lesson_id');
     }
 
     public function buildingLocation()

@@ -2,9 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\SchoolClass;
-use App\Models\Student;
-use App\Models\Teacher;
+use App\Models\StudentRequest;
 use App\Models\User;
 use Database\Seeders\SchoolDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +32,7 @@ class ApiEndpointsTest extends TestCase
 
         $this->getJson('/api/locations/buildings')->assertUnauthorized();
         $this->withToken($teacherToken)->getJson('/api/locations/buildings')->assertForbidden();
+        $this->withToken($teacherToken)->getJson('/api/courses')->assertForbidden();
         $building = $this->withToken($adminToken)->postJson('/api/locations/buildings', [
             'name' => 'API Test Building',
             'code' => 'API-B',
@@ -101,7 +100,7 @@ class ApiEndpointsTest extends TestCase
         $this->withToken($adminToken)->getJson('/api/student-requests/pending-count')->assertOk();
         $this->withToken($adminToken)->getJson('/api/student-requests')->assertOk();
 
-        $studentRequestId = \App\Models\StudentRequest::query()->where('subject', 'Endpoint smoke test request')->value('id');
+        $studentRequestId = StudentRequest::query()->where('subject', 'Endpoint smoke test request')->value('id');
         $this->withToken($adminToken)->getJson("/api/student-requests/{$studentRequestId}")->assertOk();
         $this->withToken($adminToken)->putJson("/api/student-requests/{$studentRequestId}/status", [
             'status' => 'in_progress',
@@ -147,10 +146,29 @@ class ApiEndpointsTest extends TestCase
         $teacherData['last_name'] = 'Patched';
         $this->withToken($adminToken)->patchJson("/api/teachers/{$teacherId}", $teacherData)->assertOk();
 
+        $course = $this->withToken($adminToken)->postJson('/api/courses', [
+            'name' => 'API Test Course', 'code' => 'API-C01', 'description' => 'Course CRUD test', 'status' => 'active',
+        ])->assertCreated()->json('data');
+        $courseId = $course['id'];
+        $this->withToken($adminToken)->putJson("/api/courses/{$courseId}", [
+            'name' => 'API Test Course Updated', 'code' => 'API-C01', 'description' => 'Updated course test', 'status' => 'active',
+        ])->assertOk();
+        $lesson = $this->withToken($adminToken)->postJson("/api/courses/{$courseId}/lessons", [
+            'name' => 'API Test Lesson', 'lesson_number' => 1, 'description' => 'Lesson CRUD test', 'status' => 'active',
+        ])->assertCreated()->json('data');
+        $lessonId = $lesson['id'];
+        $this->withToken($adminToken)->putJson("/api/lessons/{$lessonId}", [
+            'name' => 'API Test Lesson Updated', 'lesson_number' => 1, 'description' => 'Updated lesson test', 'status' => 'active',
+        ])->assertOk();
+        $this->withToken($adminToken)->getJson('/api/courses')->assertOk()
+            ->assertJsonPath('0.lessons.0.name', 'API Test Lesson Updated');
+
         $classData = [
             'name' => 'API Test Class',
-            'course' => 'API Test Course',
-            'lesson' => 'API Test Lesson',
+            'course' => 'API Test Course Updated',
+            'course_id' => $courseId,
+            'lesson' => 'API Test Lesson Updated',
+            'lesson_id' => $lessonId,
             'delivery_mode' => 'physical',
             'section' => 'Z',
             'academic_year' => '2026-2027',
@@ -162,8 +180,13 @@ class ApiEndpointsTest extends TestCase
             'teacher_id' => $teacherId,
             'status' => 'active',
         ];
-        $class = $this->withToken($adminToken)->postJson('/api/classes', $classData)->assertCreated()->json('data');
+        $class = $this->withToken($adminToken)->postJson('/api/classes', $classData)->assertCreated()
+            ->assertJsonPath('data.course', 'API Test Course Updated')
+            ->assertJsonPath('data.lesson', 'API Test Lesson Updated')
+            ->json('data');
         $classId = $class['id'];
+        $this->withToken($adminToken)->deleteJson("/api/lessons/{$lessonId}")->assertStatus(409);
+        $this->withToken($adminToken)->deleteJson("/api/courses/{$courseId}")->assertStatus(409);
         $this->withToken($adminToken)->deleteJson("/api/locations/rooms/{$roomId}")->assertStatus(409);
         $this->withToken($adminToken)->deleteJson("/api/locations/floors/{$floorId}")->assertStatus(409);
         $this->withToken($adminToken)->deleteJson("/api/locations/buildings/{$buildingId}")->assertStatus(409);
@@ -193,6 +216,8 @@ class ApiEndpointsTest extends TestCase
 
         $this->withToken($adminToken)->deleteJson("/api/classes/{$classId}/students/{$studentId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/classes/{$classId}")->assertOk();
+        $this->withToken($adminToken)->deleteJson("/api/lessons/{$lessonId}")->assertOk();
+        $this->withToken($adminToken)->deleteJson("/api/courses/{$courseId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/locations/rooms/{$roomId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/locations/floors/{$floorId}")->assertOk();
         $this->withToken($adminToken)->deleteJson("/api/locations/buildings/{$buildingId}")->assertOk();

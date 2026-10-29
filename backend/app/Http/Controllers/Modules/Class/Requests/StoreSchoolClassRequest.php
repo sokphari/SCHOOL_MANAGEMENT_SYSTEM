@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Modules\Class\Requests;
 
-use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSchoolClassRequest extends FormRequest
 {
@@ -18,6 +18,8 @@ class StoreSchoolClassRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'course' => ['required', 'string', 'max:100'],
             'lesson' => ['required', 'string', 'max:150'],
+            'course_id' => ['nullable', 'required_with:lesson_id', 'integer', 'exists:courses,id'],
+            'lesson_id' => ['nullable', 'required_with:course_id', 'integer', Rule::exists('lessons', 'id')->where('course_id', $this->input('course_id'))],
             'delivery_mode' => ['required', 'in:physical,hybrid,online'],
             'section' => ['nullable', 'string', 'max:50'],
             'academic_year' => ['required', 'string', 'max:20'],

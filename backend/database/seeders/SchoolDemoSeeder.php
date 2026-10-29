@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Attendance;
+use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\SchoolClass;
 use App\Models\Setting;
 use App\Models\Student;
@@ -71,12 +73,41 @@ class SchoolDemoSeeder extends Seeder
             ));
         }
 
+        $catalog = [
+            ['name' => 'Web Development', 'code' => 'WEB-01', 'description' => 'Frontend development and web fundamentals.', 'lessons' => ['HTML and CSS Foundations', 'React Fundamentals']],
+            ['name' => 'Laravel Backend', 'code' => 'LAR-01', 'description' => 'Build web APIs with Laravel.', 'lessons' => ['Routing and Controllers', 'Eloquent ORM']],
+            ['name' => 'Mathematics', 'code' => 'MAT-01', 'description' => 'Core mathematics and problem solving.', 'lessons' => ['Algebra Basics', 'Geometry']],
+            ['name' => 'English Language', 'code' => 'ENG-01', 'description' => 'English grammar, reading, and writing.', 'lessons' => ['Grammar Essentials', 'Writing Skills']],
+            ['name' => 'Science', 'code' => 'SCI-01', 'description' => 'An introduction to physical and life sciences.', 'lessons' => ['Matter and Energy', 'Human Biology']],
+        ];
+        $courses = collect();
+        foreach ($catalog as $item) {
+            $course = Course::updateOrCreate(
+                ['code' => $item['code']],
+                ['name' => $item['name'], 'description' => $item['description'], 'status' => 'active']
+            );
+            $lessons = collect();
+            foreach ($item['lessons'] as $index => $lessonName) {
+                $lessons->push(Lesson::updateOrCreate(
+                    ['course_id' => $course->id, 'lesson_number' => $index + 1],
+                    ['name' => $lessonName, 'description' => null, 'status' => 'active']
+                ));
+            }
+            $courses->push(['course' => $course, 'lessons' => $lessons]);
+        }
+
         $classes = collect();
         for ($i = 1; $i <= 10; $i++) {
+            $catalogItem = $courses[($i - 1) % $courses->count()];
+            $lesson = $catalogItem['lessons'][($i - 1) % $catalogItem['lessons']->count()];
             $classes->push(SchoolClass::updateOrCreate(
                 ['name' => "Grade {$i}", 'academic_year' => '2026-2027'],
                 [
                     'section' => 'A',
+                    'course' => $catalogItem['course']->name,
+                    'course_id' => $catalogItem['course']->id,
+                    'lesson' => $lesson->name,
+                    'lesson_id' => $lesson->id,
                     'room' => sprintf('Room %02d', $i),
                     'teacher_id' => $teachers[$i - 1]->id,
                     'description' => "Demo class {$i}",

@@ -250,8 +250,8 @@ export default function ClassDetailPage() {
           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${classData.pre_end_at ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200" : classData.end_date && classData.end_date < getLocalDateString() ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300" : classData.end_date ? "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200" : classData.status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}`}>{classData.pre_end_at ? "Pre-End" : classData.end_date && classData.end_date < getLocalDateString() ? "Ended" : classData.end_date ? `Ends ${classData.end_date}` : classData.status || "Unknown"}</span>
         </div>
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
-          <SummaryItem icon={faBookOpen} label="Course" value={classData.course || classData.name} />
-          <SummaryItem icon={faBookOpen} label="Lesson" value={classData.lesson || "General studies"} />
+          <SummaryItem icon={faBookOpen} label="Course" value={classData.course_record?.name || classData.course || classData.name} />
+          <SummaryItem icon={faBookOpen} label="Lesson" value={classData.lesson_record?.name || classData.lesson || "General studies"} />
           <SummaryItem icon={faBookOpen} label="Class type" value={classData.delivery_mode || "Physical"} />
           <SummaryItem icon={faCalendarDays} label="Academic year" value={classData.academic_year || "—"} />
           <SummaryItem icon={faDoorOpen} label="Building" value={classData.buildingLocation?.name || classData.building || "—"} />

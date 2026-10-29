@@ -5,31 +5,32 @@ namespace App\Http\Controllers\Modules\Class\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modules\Class\Requests\StoreSchoolClassRequest;
 use App\Http\Controllers\Modules\Class\Requests\UpdateSchoolClassRequest;
+use App\Models\Building;
+use App\Models\Course;
+use App\Models\Floor;
+use App\Models\Lesson;
+use App\Models\Room;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
-use App\Models\Building;
-use App\Models\Floor;
-use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SchoolClassController extends Controller
 {
-
     public function index(Request $request)
     {
         $user = auth()->user();
 
-        $query = SchoolClass::with(['teacher', 'buildingLocation', 'floorLocation', 'roomLocation'])->withCount('students');
+        $query = SchoolClass::with(['teacher', 'buildingLocation', 'floorLocation', 'roomLocation', 'courseRecord', 'lessonRecord'])->withCount('students');
 
         if ($user->role === 'teacher') {
             $teacher = Teacher::where('user_id', $user->id)->first();
 
-            if (!$teacher) {
+            if (! $teacher) {
                 return response()->json([
-                    'message' => 'Teacher profile is not linked to this user.'
+                    'message' => 'Teacher profile is not linked to this user.',
                 ], 404);
             }
 
@@ -43,6 +44,10 @@ class SchoolClassController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('section', 'like', "%{$search}%")
                     ->orWhere('academic_year', 'like', "%{$search}%")
+                    ->orWhere('course', 'like', "%{$search}%")
+                    ->orWhere('lesson', 'like', "%{$search}%")
+                    ->orWhereHas('courseRecord', fn ($courseQuery) => $courseQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('lessonRecord', fn ($lessonQuery) => $lessonQuery->where('name', 'like', "%{$search}%"))
                     ->orWhere('room', 'like', "%{$search}%");
             });
         }
@@ -60,18 +65,19 @@ class SchoolClassController extends Controller
     {
         $data = $request->validated();
         $this->storeLocationNames($data);
+        $this->storeCourseLessonNames($data);
         $schoolClass = SchoolClass::create($data);
 
         return response()->json([
             'message' => 'Class created successfully',
-            'data' => $schoolClass
+            'data' => $schoolClass->load(['courseRecord', 'lessonRecord']),
         ], 201);
     }
 
     public function show(SchoolClass $class)
     {
         return response()->json(
-            $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation'])
+            $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation', 'courseRecord', 'lessonRecord'])
         );
     }
 
@@ -79,11 +85,12 @@ class SchoolClassController extends Controller
     {
         $data = $request->validated();
         $this->storeLocationNames($data);
+        $this->storeCourseLessonNames($data);
         $class->update($data);
 
         return response()->json([
             'message' => 'Class updated successfully',
-            'data' => $class
+            'data' => $class->fresh()->load(['courseRecord', 'lessonRecord']),
         ]);
     }
 
@@ -92,7 +99,7 @@ class SchoolClassController extends Controller
         $class->delete();
 
         return response()->json([
-            'message' => 'Class deleted successfully'
+            'message' => 'Class deleted successfully',
         ]);
     }
 
@@ -151,11 +158,11 @@ class SchoolClassController extends Controller
             $student->id => [
                 'joined_at' => now()->toDateString(),
                 'status' => 'active',
-            ]
+            ],
         ]);
 
         return response()->json([
-            'message' => 'Student assigned to class successfully'
+            'message' => 'Student assigned to class successfully',
         ]);
     }
 
@@ -167,7 +174,7 @@ class SchoolClassController extends Controller
         $class->students()->detach($student->id);
 
         return response()->json([
-            'message' => 'Student removed from class successfully'
+            'message' => 'Student removed from class successfully',
         ]);
     }
 
@@ -186,7 +193,7 @@ class SchoolClassController extends Controller
             return response()->json(['message' => 'Choose a different class to transfer this student.'], 422);
         }
 
-        if (!$class->students()->whereKey($student->id)->exists()) {
+        if (! $class->students()->whereKey($student->id)->exists()) {
             return response()->json(['message' => 'The student is not enrolled in the source class.'], 422);
         }
 
@@ -238,5 +245,17 @@ class SchoolClassController extends Controller
         $data['building'] = Building::findOrFail($data['building_id'])->name;
         $data['floor'] = Floor::findOrFail($data['floor_id'])->name;
         $data['room'] = Room::findOrFail($data['room_id'])->name;
+    }
+
+    private function storeCourseLessonNames(array &$data): void
+    {
+        if (empty($data['course_id']) || empty($data['lesson_id'])) {
+            return;
+        }
+
+        $course = Course::findOrFail($data['course_id']);
+        $lesson = Lesson::where('course_id', $course->id)->findOrFail($data['lesson_id']);
+        $data['course'] = $course->name;
+        $data['lesson'] = $lesson->name;
     }
 }
