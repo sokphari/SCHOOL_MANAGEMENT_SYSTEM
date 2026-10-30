@@ -536,7 +536,8 @@ repeating discovery work.
 - `SchoolDemoSeeder` adds one example session for each of its ten demo classes.
 - The API blocks overlapping sessions when the same class, assigned teacher, or
   room is already scheduled that weekday. Admin-only writes are enforced on the
-  backend. Class options are limited to active classes.
+  backend. Class options are limited to active classes and filtered by the
+  selected weekday/time, so unavailable classes are not offered in the form.
 - Added `timetable_sessions`; migration
   `2026_10_30_000001_create_timetable_sessions_table` has been applied to the
   configured Docker database. No dependencies were added.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -34,6 +34,7 @@ export default function TimetableFormPage() {
   const navigate = useNavigate();
   const editing = Boolean(id);
   const [classes, setClasses] = useState<TimetableClass[]>([]);
+  const [sessions, setSessions] = useState<TimetableSession[]>([]);
   const [form, setForm] = useState({
     school_class_id: "",
     day_of_week: "1",
@@ -47,12 +48,15 @@ export default function TimetableFormPage() {
   useEffect(() => {
     const loadForm = async () => {
       try {
-        const { data: availableClasses } = await getTimetableClasses();
+        const [{ data: availableClasses }, { data: existingSessions }] = await Promise.all([
+          getTimetableClasses(),
+          getTimetable(),
+        ]);
         setClasses(availableClasses);
+        setSessions(existingSessions);
 
         if (editing && id) {
-          const { data: sessions } = await getTimetable();
-          const session = sessions.find((item: TimetableSession) => item.id === Number(id));
+          const session = existingSessions.find((item) => item.id === Number(id));
           if (!session) throw new Error("This timetable session was not found.");
 
           setForm({
@@ -62,9 +66,12 @@ export default function TimetableFormPage() {
             ends_at: session.ends_at.slice(0, 5),
           });
         } else if (availableClasses.length > 0) {
+          const firstAvailable = availableClasses.find((schoolClass) =>
+            !hasScheduleConflict(schoolClass, existingSessions, 1, "08:00", "09:00"),
+          );
           setForm((current) => ({
             ...current,
-            school_class_id: String(availableClasses[0].id),
+            school_class_id: firstAvailable ? String(firstAvailable.id) : "",
           }));
         }
       } catch (requestError) {
@@ -82,6 +89,32 @@ export default function TimetableFormPage() {
 
     void loadForm();
   }, [editing, id]);
+
+  const availableClasses = useMemo(
+    () =>
+      classes.filter(
+        (schoolClass) =>
+          !hasScheduleConflict(
+            schoolClass,
+            sessions,
+            Number(form.day_of_week),
+            form.starts_at,
+            form.ends_at,
+            Number(id) || undefined,
+          ),
+      ),
+    [classes, form.day_of_week, form.ends_at, form.starts_at, id, sessions],
+  );
+
+  useEffect(() => {
+    if (
+      !loading &&
+      form.school_class_id &&
+      !availableClasses.some((schoolClass) => String(schoolClass.id) === form.school_class_id)
+    ) {
+      setForm((current) => ({ ...current, school_class_id: "" }));
+    }
+  }, [availableClasses, form.school_class_id, loading]);
 
   const selectedClass = classes.find((item) => String(item.id) === form.school_class_id);
 
@@ -146,7 +179,7 @@ export default function TimetableFormPage() {
               {editing ? "Edit timetable session" : "Add timetable session"}
             </h1>
             <p className="mb-0 mt-1 text-sm text-secondary">
-              Choose a class, weekday, and session time.
+              Choose the day and time first, then select an available class.
             </p>
           </div>
         </header>
@@ -156,24 +189,6 @@ export default function TimetableFormPage() {
         ) : (
           <>
             <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
-              <Field label="Class">
-                <select
-                  required
-                  value={form.school_class_id}
-                  onChange={(event) =>
-                    setForm({ ...form, school_class_id: event.target.value })
-                  }
-                  className={fieldClass}
-                >
-                  <option value="">Select a class</option>
-                  {classes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                      {item.section ? ` · Section ${item.section}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </Field>
               <Field label="Day">
                 <select
                   value={form.day_of_week}
@@ -206,8 +221,34 @@ export default function TimetableFormPage() {
                   className={fieldClass}
                 />
               </Field>
+              <Field label="Class / Grade and section">
+                <select
+                  required
+                  value={form.school_class_id}
+                  onChange={(event) =>
+                    setForm({ ...form, school_class_id: event.target.value })
+                  }
+                  className={fieldClass}
+                >
+                  <option value="">
+                    {availableClasses.length > 0
+                      ? "Select an available class"
+                      : "No classes available at this time"}
+                  </option>
+                  {availableClasses.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                      {item.section ? ` · Section ${item.section}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
               {selectedClass && <ClassDetails schoolClass={selectedClass} />}
+              <p className="m-0 text-xs text-muted sm:col-span-2">
+                Classes are filtered by the selected day and time. Busy teachers and rooms are
+                excluded. The teacher assigned to each class appears below.
+              </p>
             </div>
 
             {error && (
@@ -222,7 +263,7 @@ export default function TimetableFormPage() {
             <footer className="flex justify-end border-t border-border px-5 py-4 sm:px-7">
               <button
                 type="submit"
-                disabled={saving || classes.length === 0}
+                disabled={saving || availableClasses.length === 0 || !form.school_class_id}
                 className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FontAwesomeIcon icon={faFloppyDisk} />
@@ -256,6 +297,48 @@ function ClassDetails({ schoolClass }: { schoolClass: TimetableClass }) {
         </span>
       </div>
     </div>
+  );
+}
+
+function hasScheduleConflict(
+  schoolClass: TimetableClass,
+  sessions: TimetableSession[],
+  dayOfWeek: number,
+  startsAt: string,
+  endsAt: string,
+  ignoreSessionId?: number,
+): boolean {
+  return sessions.some((session) => {
+    if (session.id === ignoreSessionId || session.day_of_week !== dayOfWeek) return false;
+
+    const overlaps =
+      session.starts_at.slice(0, 5) < endsAt && session.ends_at.slice(0, 5) > startsAt;
+    if (!overlaps) return false;
+
+    const scheduledClass = session.school_class;
+    const sameClass = scheduledClass.id === schoolClass.id;
+    const sameTeacher = Boolean(
+      schoolClass.teacher_id && scheduledClass.teacher_id === schoolClass.teacher_id,
+    );
+    const sameRoom = roomsMatch(schoolClass, scheduledClass);
+
+    return sameClass || sameTeacher || sameRoom;
+  });
+}
+
+function roomsMatch(first: TimetableClass, second: TimetableClass): boolean {
+  if (first.room_id && second.room_id) return first.room_id === second.room_id;
+
+  const firstRoom = first.room_location?.name || first.room;
+  const secondRoom = second.room_location?.name || second.room;
+  if (!firstRoom || !secondRoom) return false;
+
+  const firstBuilding = first.building_location?.name || first.building || "";
+  const secondBuilding = second.building_location?.name || second.building || "";
+
+  return (
+    firstRoom.trim().toLowerCase() === secondRoom.trim().toLowerCase() &&
+    firstBuilding.trim().toLowerCase() === secondBuilding.trim().toLowerCase()
   );
 }
 
