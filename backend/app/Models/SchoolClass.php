@@ -84,4 +84,14 @@ class SchoolClass extends Model
     {
         return $this->hasMany(Attendance::class, 'school_class_id');
     }
+
+    public function gradingTerms()
+    {
+        return $this->hasMany(GradingTerm::class, 'school_class_id');
+    }
+
+    public function timetableSessions()
+    {
+        return $this->hasMany(TimetableSession::class, 'school_class_id');
+    }
 }

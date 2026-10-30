@@ -17,6 +17,9 @@ export interface SchoolClass {
   buildingLocation?: { id: number; name: string; code: string | null } | null;
   floorLocation?: { id: number; name: string; code: string | null } | null;
   roomLocation?: { id: number; name: string; code: string | null } | null;
+  building_location?: { id: number; name: string; code: string | null } | null;
+  floor_location?: { id: number; name: string; code: string | null } | null;
+  room_location?: { id: number; name: string; code: string | null } | null;
   course?: string | null;
   course_id?: number | null;
   lesson_id?: number | null;

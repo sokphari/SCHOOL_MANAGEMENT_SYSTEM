@@ -10,6 +10,8 @@ require __DIR__.'/api/classes.php';
 require __DIR__.'/api/locations.php';
 require __DIR__.'/api/courses.php';
 require __DIR__.'/api/attendances.php';
+require __DIR__.'/api/grades.php';
+require __DIR__.'/api/timetable.php';
 require __DIR__.'/api/student-requests.php';
 require __DIR__.'/api/settings.php';
 require __DIR__.'/api/utilities.php';

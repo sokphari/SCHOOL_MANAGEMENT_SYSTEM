@@ -506,6 +506,43 @@ repeating discovery work.
   seeder created five courses and ten lessons. The production bundle still
   reports the known >500 kB chunk warning.
 
+## Follow-up — Grades and term scores (2026-10-29)
+
+- Added Grades navigation for admins and teachers. Teachers can view and update
+  scores only in their assigned classes; only admins can create grading terms.
+- A grading term belongs to one class and has a name plus inclusive start/end
+  dates. Each roster row shows attendance /40, manually entered Activity /30,
+  manually entered Exam /40, and the computed total /110.
+- Attendance is calculated from saved class attendance records within that
+  term: start at 40; subtract 1 per absent record and 0.5 per permission
+  (`excused`) record, never below zero. Present and late records do not reduce
+  the score. Activity and Exam are nullable until entered and are saved per
+  student and term.
+- Added `grading_terms` and `term_scores` tables. Migration
+  `2026_10_29_000007_create_grading_terms_and_scores_tables` has been applied
+  to the configured Docker database. No new dependencies were added.
+- Frontend TypeScript check passed. PHP Pint, PHP syntax checks, and route
+  discovery passed. Runtime API/database checks have not been run for this
+  change.
+
+## Follow-up — Weekly timetable (2026-10-30)
+
+- Added a recurring Monday-to-Sunday timetable for admins and teachers. Teachers
+  can view sessions for their assigned classes; admins can create, edit, and
+  remove sessions through full pages.
+- Sessions are linked to a class, so course, lesson, teacher, room, and building
+  details come from the existing class record. Each session stores weekday,
+  start time, and end time.
+- `SchoolDemoSeeder` adds one example session for each of its ten demo classes.
+- The API blocks overlapping sessions when the same class, assigned teacher, or
+  room is already scheduled that weekday. Admin-only writes are enforced on the
+  backend. Class options are limited to active classes.
+- Added `timetable_sessions`; migration
+  `2026_10_30_000001_create_timetable_sessions_table` has been applied to the
+  configured Docker database. No dependencies were added.
+- Verification: frontend TypeScript check, PHP Pint/syntax, route discovery, and
+  `git diff --check` passed. No API/database runtime checks have been run yet.
+
 ### Demo login
 
 After migrations, run `cd backend && php artisan db:seed` to seed demo records.

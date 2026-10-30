@@ -28,6 +28,11 @@ import CoursesPage from "@/modules/courses/pages/CoursesPage.tsx";
 import CourseDetailsPage from "@/modules/courses/pages/CourseDetailsPage.tsx";
 import CourseFormPage from "@/modules/courses/pages/CourseFormPage.tsx";
 import LessonFormPage from "@/modules/courses/pages/LessonFormPage.tsx";
+import GradesPage from "@/modules/grades/pages/GradesPage.tsx";
+import GradeTermCreatePage from "@/modules/grades/pages/GradeTermCreatePage.tsx";
+import GradeTermPage from "@/modules/grades/pages/GradeTermPage.tsx";
+import TimetablePage from "@/modules/timetable/pages/TimetablePage.tsx";
+import TimetableFormPage from "@/modules/timetable/pages/TimetableFormPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -174,6 +179,55 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin", "teacher"]}>
             <AttendancePage />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "grades",
+        element: (
+          <RoleRoute roles={["admin", "teacher"]}>
+            <GradesPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "grades/classes/:classId/terms/create",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <GradeTermCreatePage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "grades/terms/:termId",
+        element: (
+          <RoleRoute roles={["admin", "teacher"]}>
+            <GradeTermPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable",
+        element: (
+          <RoleRoute roles={["admin", "teacher"]}>
+            <TimetablePage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable/create",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <TimetableFormPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable/:id/edit",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <TimetableFormPage />
           </RoleRoute>
         ),
       },

@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentRequest;
 use App\Models\Teacher;
+use App\Models\TimetableSession;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -114,6 +115,17 @@ class SchoolDemoSeeder extends Seeder
                     'status' => 'active',
                 ]
             ));
+        }
+
+        foreach ($classes as $index => $class) {
+            TimetableSession::updateOrCreate(
+                ['school_class_id' => $class->id],
+                [
+                    'day_of_week' => ($index % 5) + 1,
+                    'starts_at' => '08:00:00',
+                    'ends_at' => '09:30:00',
+                ]
+            );
         }
 
         foreach ($students as $i => $student) {

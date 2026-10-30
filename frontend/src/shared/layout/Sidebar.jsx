@@ -7,6 +7,8 @@ import {
   faBook,
   faBuilding,
   faCalendarCheck,
+  faCalendarDays,
+  faAward,
   faChalkboardUser,
   faChevronDown,
   faChartPie,
@@ -27,6 +29,8 @@ const menuIcons = {
   Courses: faBook,
   Facilities: faBuilding,
   Attendance: faCalendarCheck,
+  Timetable: faCalendarDays,
+  Grades: faAward,
   Requests: faClipboardList,
   Settings: faGear,
 };
