@@ -5,6 +5,7 @@
 require __DIR__.'/api/auth.php';
 require __DIR__.'/api/dashboard.php';
 require __DIR__.'/api/students.php';
+require __DIR__.'/api/student-registrations.php';
 require __DIR__.'/api/teachers.php';
 require __DIR__.'/api/classes.php';
 require __DIR__.'/api/locations.php';

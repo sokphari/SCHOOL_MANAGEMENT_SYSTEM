@@ -36,6 +36,8 @@ import TimetableFormPage from "@/modules/timetable/pages/TimetableFormPage.tsx";
 import AuditLogsPage from "@/modules/audit-logs/pages/AuditLogsPage.tsx";
 import SystemUsersPage from "@/modules/audit-logs/pages/SystemUsersPage.tsx";
 import RolePermissionsPage from "@/modules/audit-logs/pages/RolePermissionsPage.tsx";
+import StudentRegistrationPage from "@/modules/public/pages/StudentRegistrationPage.tsx";
+import StudentRegistrationsPage from "@/modules/students/pages/StudentRegistrationsPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +48,10 @@ const router = createBrowserRouter([
   {
     path: "/request-scan",
     element: <StudentRequestScanPage />,
+  },
+  {
+    path: "/student-registration",
+    element: <StudentRegistrationPage />,
   },
   {
     path: "/admin/login",
@@ -110,6 +116,14 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin"]}>
             <StudentCreatePage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "students/registrations",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <StudentRegistrationsPage />
           </RoleRoute>
         ),
       },

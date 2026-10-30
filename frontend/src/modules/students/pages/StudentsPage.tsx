@@ -126,9 +126,11 @@ export default function StudentsPage() {
           <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Students</h1>
           <p className="mb-0 mt-1 text-sm text-secondary">View and manage student records.</p>
         </div>
-        {user?.role === "admin" && <button onClick={() => navigate("/admin/students/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/40">
+        {user?.role === "admin" && <div className="flex flex-wrap gap-2"><button onClick={() => navigate("/admin/students/registrations")} className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:border-brand/40 hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand/40">
+          <FontAwesomeIcon icon={faQrcode} /> Registration QR
+        </button><button onClick={() => navigate("/admin/students/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/40">
           <span aria-hidden="true">+</span> Add student
-        </button>}
+        </button></div>}
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">

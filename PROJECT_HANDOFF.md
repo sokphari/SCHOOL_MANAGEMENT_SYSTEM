@@ -704,3 +704,13 @@ Both demo account types use password `password`:
 - Teacher: `teacher1@example.com`
 
 Do not use `migrate:fresh` on a database containing data that should be kept.
+
+### Student QR registration (2026-10-31)
+
+- Added a public `/student-registration` form that requires an admin-issued QR from `/admin/students/registrations`. The existing per-student QR still opens `/request-scan` for current students and is unchanged.
+- Admin-issued QR tokens are random, stored only as SHA-256 hashes, expire after 24 hours, and can submit one application exactly once. The token is locked and consumed in the same transaction as application creation. The public page checks token status and shows an expired/used message. To allow another attempt, an admin must issue a fresh QR.
+- Public applications are rate-limited and stored as `pending`; no student record is created at submission. Admins can filter/search applications and approve or reject them. Approval transactionally creates an active student with a generated `STU-<year>-<random>` code.
+- New API routes: `POST /api/student-registrations/qr-tokens` (admin issue), `GET /api/public/student-registrations/qr-status`, `POST /api/public/student-registrations`, `GET /api/student-registrations`, and admin `POST /api/student-registrations/{id}/approve|reject`.
+- Applied `2026_10_31_000004_create_student_registrations_table` and `2026_10_31_000005_create_student_registration_tokens_table` to the local Docker database. For another environment, run `cd backend && php artisan migrate`. No dependency was added.
+- Verification: frontend `npm run typecheck`, `npm run lint`, and `npm run build`; PHP syntax checks, Laravel route discovery, Pint formatting, and `git diff --check` pass. No feature tests were run. Existing large-bundle warning remains on the production build.
+- Admin notification bell now includes pending student registrations and routes View actions to the registration review page. It refreshes automatically every 10 seconds and immediately when the browser tab regains focus; this is near-real-time polling and does not require a page reload. Sound is off by default and can be enabled in the notification panel; enabled sound plays one brief chime when newly detected registration IDs arrive, not on every poll. The preference is stored in localStorage. No broadcasting/WebSocket service was added.

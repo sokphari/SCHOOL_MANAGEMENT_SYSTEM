@@ -88,8 +88,8 @@ export default function Sidebar({ isOpen, onNavigate }) {
             <div id={submenuId} className="ml-[19px] flex flex-col gap-1 border-l border-white/10 py-1 pl-3">
               {isAudit ? (
                 <>
-                  <NavLink to={`${item.path}/users`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Users</NavLink>
-                  <NavLink to={`${item.path}/roles`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Roles</NavLink>
+                  <NavLink to={`${item.path}/users`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Users && Account</NavLink>
+                  <NavLink to={`${item.path}/roles`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Roles && Permission</NavLink>
                 </>
               ) : hasCreateLink ? (
                 <NavLink to={`${item.path}/create`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>

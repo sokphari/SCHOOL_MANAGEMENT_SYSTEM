@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,10 +9,14 @@ import {
   faInbox,
   faRightFromBracket,
   faShieldHalved,
+  faUserPlus,
+  faVolumeHigh,
+  faVolumeXmark,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { getAuditLogs } from "@/modules/audit-logs/api/auditLogsApi";
 import { getStudentRequests } from "@/modules/student-requests/api/studentRequestsApi.ts";
+import { getStudentRegistrations } from "@/modules/students/api/studentRegistrationApi";
 
 function todayDate() {
   const now = new Date();
@@ -43,22 +47,74 @@ function presentActivity(event) {
 
 export default function NotificationBell() {
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingRegistrations, setPendingRegistrations] = useState([]);
   const [activityEvents, setActivityEvents] = useState([]);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("admin-registration-alert-sound") === "enabled");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const panelRef = useRef(null);
+  const seenRegistrationIds = useRef(new Set());
+  const initializedRegistrations = useRef(false);
+  const soundEnabledRef = useRef(soundEnabled);
+  const audioContextRef = useRef(null);
   const navigate = useNavigate();
 
-  const fetchNotifications = async () => {
+  const playRegistrationChime = useCallback(() => {
+    const context = audioContextRef.current;
+    if (!context || context.state !== "running") return;
+    const now = context.currentTime;
+    [784, 988].forEach((frequency, index) => {
+      const start = now + index * 0.14;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(0.055, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.21);
+    });
+  }, []);
+
+  const toggleSound = async () => {
+    const next = !soundEnabledRef.current;
+    soundEnabledRef.current = next;
+    setSoundEnabled(next);
+    localStorage.setItem("admin-registration-alert-sound", next ? "enabled" : "disabled");
+    if (!next) return;
+    try {
+      const AudioContextClass = window.AudioContext;
+      if (!audioContextRef.current && AudioContextClass) audioContextRef.current = new AudioContextClass();
+      if (audioContextRef.current?.state === "suspended") await audioContextRef.current.resume();
+    } catch {
+      // Audio is optional; the visual notification remains available.
+    }
+  };
+
+  const fetchNotifications = useCallback(async () => {
     const today = todayDate();
-    const [requestsResult, authResult, securityResult] = await Promise.allSettled([
+    const [requestsResult, registrationsResult, authResult, securityResult] = await Promise.allSettled([
       getStudentRequests({ status: "pending", page: 1 }),
+      getStudentRegistrations({ status: "pending", page: 1 }),
       getAuditLogs({ module: "auth", date_from: today, date_to: today, page: 1 }),
       getAuditLogs({ module: "security", date_from: today, date_to: today, page: 1 }),
     ]);
 
     if (requestsResult.status === "fulfilled") {
       setPendingRequests(requestsResult.value.data.data ?? []);
+    }
+    if (registrationsResult.status === "fulfilled") {
+      const registrations = registrationsResult.value.data.data ?? [];
+      const newRegistrations = registrations.filter((registration) => !seenRegistrationIds.current.has(registration.id));
+      if (initializedRegistrations.current && soundEnabledRef.current && newRegistrations.length > 0) {
+        playRegistrationChime();
+      }
+      registrations.forEach((registration) => seenRegistrationIds.current.add(registration.id));
+      initializedRegistrations.current = true;
+      setPendingRegistrations(registrations);
     }
 
     const authEvents = authResult.status === "fulfilled" ? authResult.value.data.data ?? [] : [];
@@ -69,17 +125,25 @@ export default function NotificationBell() {
       ),
     );
     setLoading(false);
-  };
+  }, [playRegistrationChime]);
 
   useEffect(() => {
     const initialFetch = window.setTimeout(() => void fetchNotifications(), 0);
-    const interval = window.setInterval(() => void fetchNotifications(), 30000);
+    // Poll while the admin shell is open so new applications appear without a page refresh.
+    const interval = window.setInterval(() => void fetchNotifications(), 10000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void fetchNotifications();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
 
     return () => {
       window.clearTimeout(initialFetch);
       window.clearInterval(interval);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, []);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -100,6 +164,7 @@ export default function NotificationBell() {
   }, [open]);
 
   const notifications = [
+    ...pendingRegistrations.map((registration) => ({ type: "registration", id: `registration-${registration.id}`, created_at: registration.created_at, registration })),
     ...pendingRequests.map((request) => ({ type: "request", id: `request-${request.id}`, created_at: request.created_at, request })),
     ...activityEvents.map((event) => ({ type: "activity", id: `activity-${event.id}`, created_at: event.created_at, event })),
   ]
@@ -114,6 +179,10 @@ export default function NotificationBell() {
   const navigateToAudit = () => {
     setOpen(false);
     navigate("/admin/audit-logs");
+  };
+  const navigateToRegistrations = () => {
+    setOpen(false);
+    navigate("/admin/students/registrations");
   };
 
   return (
@@ -135,19 +204,37 @@ export default function NotificationBell() {
           <header className="flex items-center justify-between border-b border-border px-4 py-3">
             <div>
               <h2 className="m-0 text-sm font-bold">Notifications</h2>
-              <p className="mb-0 mt-0.5 text-xs text-muted">Requests and account/security activity today</p>
+              <p className="mb-0 mt-0.5 text-xs text-muted">New registrations, requests, and account/security activity</p>
             </div>
-            <button type="button" aria-label="Close notifications" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-brand-soft hover:text-primary"><FontAwesomeIcon icon={faXmark} /></button>
+            <div className="flex items-center gap-1">
+              <button type="button" aria-label={soundEnabled ? "Turn notification sound off" : "Turn notification sound on"} aria-pressed={soundEnabled} title={soundEnabled ? "Turn sound off" : "Turn sound on"} onClick={() => void toggleSound()} className={`grid size-8 place-items-center rounded-lg transition hover:bg-brand-soft hover:text-primary ${soundEnabled ? "text-brand" : "text-muted"}`}><FontAwesomeIcon icon={soundEnabled ? faVolumeHigh : faVolumeXmark} /></button>
+              <button type="button" aria-label="Close notifications" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-brand-soft hover:text-primary"><FontAwesomeIcon icon={faXmark} /></button>
+            </div>
           </header>
 
           <div className="max-h-[min(480px,65vh)] overflow-y-auto">
             {loading ? (
               <p className="m-0 px-4 py-8 text-center text-sm text-muted">Loading notifications…</p>
             ) : count === 0 ? (
-              <div className="px-4 py-9 text-center"><FontAwesomeIcon icon={faInbox} className="mb-2 text-xl text-muted" /><p className="m-0 text-sm font-semibold">You’re all caught up</p><p className="mb-0 mt-1 text-xs text-muted">No student requests or account/security events today.</p></div>
+              <div className="px-4 py-9 text-center"><FontAwesomeIcon icon={faInbox} className="mb-2 text-xl text-muted" /><p className="m-0 text-sm font-semibold">You’re all caught up</p><p className="mb-0 mt-1 text-xs text-muted">No student registrations, requests, or account/security events today.</p></div>
             ) : (
               <div className="divide-y divide-border">
                 {notifications.map((notification) => {
+                  if (notification.type === "registration") {
+                    const { registration } = notification;
+                    return (
+                      <article key={notification.id} className="flex items-start gap-3 px-4 py-3.5">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500"><FontAwesomeIcon icon={faUserPlus} /></span>
+                        <div className="min-w-0 flex-1">
+                          <p className="m-0 truncate text-sm font-semibold">New student registration</p>
+                          <p className="mb-0 mt-0.5 truncate text-xs text-muted">{registration.first_name} {registration.last_name} · {registration.phone || registration.email || "Contact not provided"}</p>
+                          <p className="mb-0 mt-1 text-[11px] text-muted">{formatTime(registration.created_at)}</p>
+                          <button type="button" onClick={navigateToRegistrations} className="mt-2 rounded-md bg-brand-soft px-2.5 py-1.5 text-xs font-semibold text-brand-strong transition hover:bg-brand/15">View</button>
+                        </div>
+                      </article>
+                    );
+                  }
+
                   if (notification.type === "request") {
                     const { request } = notification;
                     const studentName = request.student
@@ -185,8 +272,9 @@ export default function NotificationBell() {
             )}
           </div>
 
-          {(pendingRequests.length > 0 || activityEvents.length > 0) && (
+          {(pendingRegistrations.length > 0 || pendingRequests.length > 0 || activityEvents.length > 0) && (
             <footer className="flex gap-2 border-t border-border px-3 py-2.5">
+              {pendingRegistrations.length > 0 && <button type="button" onClick={navigateToRegistrations} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View registrations</button>}
               {pendingRequests.length > 0 && <button type="button" onClick={navigateToRequests} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View all requests</button>}
               {activityEvents.length > 0 && <button type="button" onClick={navigateToAudit} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View audit log</button>}
             </footer>
