@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,10 +17,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('login', function (Request $request) {
-            $email = (string) $request->input('email');
+            $email = mb_strtolower(trim((string) $request->input('email')));
 
             return [
-                Limit::perMinute(5)->by($email.$request->ip()),
+                Limit::perMinute(5)->by($email.'|'.$request->ip()),
+                Limit::perMinute(20)->by('ip:'.$request->ip()),
             ];
         });
 
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(3)->by($request->ip()),
             ];
+        });
+
+        RateLimiter::for('public-student-lookup', function (Request $request) {
+            return [Limit::perMinute(10)->by($request->ip())];
         });
     }
 }

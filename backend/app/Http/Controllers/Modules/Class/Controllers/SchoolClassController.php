@@ -63,6 +63,7 @@ class SchoolClassController extends Controller
 
     public function store(StoreSchoolClassRequest $request)
     {
+        $this->requireAdmin();
         $data = $request->validated();
         $this->storeLocationNames($data);
         $this->storeCourseLessonNames($data);
@@ -76,6 +77,8 @@ class SchoolClassController extends Controller
 
     public function show(SchoolClass $class)
     {
+        $this->requireClassAccess($class);
+
         return response()->json(
             $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation', 'courseRecord', 'lessonRecord'])
         );
@@ -83,6 +86,7 @@ class SchoolClassController extends Controller
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class)
     {
+        $this->requireAdmin();
         $data = $request->validated();
         $this->storeLocationNames($data);
         $this->storeCourseLessonNames($data);
@@ -96,6 +100,7 @@ class SchoolClassController extends Controller
 
     public function destroy(SchoolClass $class)
     {
+        $this->requireAdmin();
         $class->delete();
 
         return response()->json([
@@ -151,6 +156,7 @@ class SchoolClassController extends Controller
 
     public function assignStudent($classId, $studentId)
     {
+        $this->requireAdmin();
         $class = SchoolClass::findOrFail($classId);
         $student = Student::findOrFail($studentId);
 
@@ -168,6 +174,7 @@ class SchoolClassController extends Controller
 
     public function removeStudent($classId, $studentId)
     {
+        $this->requireAdmin();
         $class = SchoolClass::findOrFail($classId);
         $student = Student::findOrFail($studentId);
 
@@ -257,5 +264,21 @@ class SchoolClassController extends Controller
         $lesson = Lesson::where('course_id', $course->id)->findOrFail($data['lesson_id']);
         $data['course'] = $course->name;
         $data['lesson'] = $lesson->name;
+    }
+
+    private function requireAdmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403, 'Only admins can modify classes.');
+    }
+
+    private function requireClassAccess(SchoolClass $class): void
+    {
+        $user = auth()->user();
+        if ($user?->role !== 'teacher') {
+            return;
+        }
+
+        $teacherId = Teacher::where('user_id', $user->id)->value('id');
+        abort_unless($teacherId && (int) $class->teacher_id === (int) $teacherId, 404);
     }
 }

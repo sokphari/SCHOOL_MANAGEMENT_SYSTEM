@@ -29,7 +29,7 @@ class UpdateSchoolClassRequest extends FormRequest
             'term' => ['required', 'string', 'max:100'],
             'time' => ['required', 'string', 'max:100'],
             'teacher_id' => ['nullable', 'exists:teachers,id'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'status' => ['nullable', 'in:active,inactive'],
         ];
     }

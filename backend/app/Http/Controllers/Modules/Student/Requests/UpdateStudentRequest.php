@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Modules\Student\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,7 +29,7 @@ class UpdateStudentRequest extends FormRequest
             'date_of_birth' => ['nullable', 'date'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
-            'address' => ['nullable', 'string'],
+            'address' => ['nullable', 'string', 'max:1000'],
             'guardian_name' => ['nullable', 'string', 'max:255'],
             'guardian_phone' => ['nullable', 'string', 'max:20'],
             'enrollment_date' => ['nullable', 'date'],

@@ -4,13 +4,13 @@
 - **Project Type:** REST API for School Management (Laravel 12 backend, React frontend consuming API)
 - **Purpose:** Manage students, teachers, classes, attendance, student requests/inquiries, settings, authentication/authorization
 - **Location:** `backend/` (this repo)
-- **API Style:** RESTful (routes under `/api`, auth via Laravel Sanctum bearer tokens)
-- **Notes:** No CORS config file present; frontend calls `http://127.0.0.1:8000/api` by default.
+- **API Style:** RESTful (routes under `/api`, first-party SPA auth via Laravel Sanctum session cookies)
+- **Notes:** CORS allowlist is configured in `config/cors.php`; the frontend calls the URL in `VITE_API_URL` (Docker defaults to `http://localhost:8010/api`).
 
 ## 2. Current Backend Architecture
 - **Framework:** Laravel 12.28.1 (per composer.json)
 - **PHP:** ^8.2 (environment PHP 8.3.6)
-- **Auth:** Laravel Sanctum 4.3 (token-based API auth). `User` uses `HasApiTokens`.
+- **Auth:** Laravel Sanctum 4.3 stateful SPA authentication using the Laravel web session guard, HttpOnly cookie, and CSRF token. Browser routes reject bearer tokens.
 - **API Routes:** Defined in `routes/api.php`. Web routes minimal (`/` -> welcome view).
 - **Controllers:** API controllers under `app/Http/Controllers/Api/` (8 controllers)
 - **Models:** Eloquent models in `app/Models/` (8 models)
@@ -78,17 +78,18 @@ backend/
 **DB state (from repo):** SQLite file `backend/system_shools` exists. Schema inspection showed users table has id/name/email/email_verified_at/password/remember_token/created_at/updated_at (no `role` column visible in that inspected copy) and migrations table has 9 entries; students/teachers/school_classes/attendances/class_student exist as tables. `student_requests` and `settings` tables reported as missing in that inspected copy (possible schema divergence between migrations/history and current DB file). Treat with caution.
 
 ## 6. Authentication and Authorization
-- **Login:** `POST /api/login` (throttled). AuthController uses `Auth::attempt` with email/password, creates Sanctum token via `$user->createToken('api-token')->plainTextToken`. Returns `{user, token}`.
+- **CSRF initialization:** `GET /sanctum/csrf-cookie` sets the CSRF cookie before login.
+- **Login:** `POST /api/login` (throttled). AuthController validates email/password, accepts admin/teacher accounts, starts a web session, and rotates the session ID. Returns `{user}`.
 - **Me:** `GET /api/me` (auth:sanctum) returns user.
-- **Logout:** `POST /api/logout` (auth:sanctum) deletes current access token.
+- **Logout:** `POST /api/logout` (auth:sanctum) logs out the web guard, invalidates the server-side session, and regenerates the CSRF token.
 - **Roles:** `users.role` enum('admin','teacher') default 'teacher' (migration adds it). RoleMiddleware exists but **not implemented** and **not applied** in routes. Authorization is enforced inline per controller/action.
-- **Guards:** `config/auth.php` defaults to web guard; API uses Sanctum tokens (stateless bearer) - Sanctum middleware configured.
+- **Guards:** `config/auth.php` defaults to the web session guard; Sanctum's stateful API middleware authenticates the first-party React SPA.
 - **Protected routes:** Most routes under `Route::middleware('auth:sanctum')->group(...)` require auth.
 
 ## 7. Existing Backend Modules
 | Module | Controllers/Models | Routes | Status |
 |---|---|---|---|
-| Authentication | AuthController, User, Sanctum | POST /login, GET /me, POST /logout | Implemented (token auth) |
+| Authentication | AuthController, User, Sanctum | GET /sanctum/csrf-cookie, POST /login, GET /me, POST /logout | Implemented (server-side session auth) |
 | Dashboard | DashboardController | GET /dashboard (auth) | Implemented (role-based: admin vs teacher) |
 | Students | StudentController, Student, StudentPublicController | apiResource students (auth), GET /public/students/by-code/{student_code} | Implemented |
 | Teachers | TeacherController, Teacher | apiResource teachers (auth) | Implemented |

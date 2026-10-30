@@ -10,7 +10,8 @@ repeating discovery work.
 
 ### Backend
 
-- Laravel 12 REST API, Sanctum bearer-token authentication.
+- Laravel 12 REST API, Sanctum first-party SPA session authentication with
+  server-side sessions and HttpOnly cookies.
 - API entry point: `backend/routes/api.php`; module route files are loaded from
   `backend/routes/api/` (`auth`, `dashboard`, `students`, `teachers`, `classes`,
   `attendances`, `student-requests`, `settings`, and utilities).
@@ -543,6 +544,51 @@ repeating discovery work.
   configured Docker database. No dependencies were added.
 - Verification: frontend TypeScript check, PHP Pint/syntax, route discovery, and
   `git diff --check` passed. No API/database runtime checks have been run yet.
+
+## Follow-up — Security hardening (2026-10-30)
+
+- Login now authenticates admin/teacher accounts with Laravel's web session.
+  The session ID rotates after login, the server-side session expires after
+  120 minutes idle or 8 hours absolute, and logout invalidates the session.
+  The browser receives an HttpOnly session cookie; the frontend stores
+  no bearer credential. Legacy bearer tokens are rejected on protected browser
+  routes.
+- Enabled Sanctum's stateful API middleware and CSRF cookie flow. Credentialed
+  CORS is enabled only for the explicit frontend origin allowlist; production
+  must set the exact HTTPS frontend origin and `SESSION_SECURE_COOKIE=true`.
+- React now requests `/sanctum/csrf-cookie` before login and uses credentialed
+  Axios requests with the `X-XSRF-TOKEN` header. Protected routes restore auth
+  from `/api/me`; an API 401 clears the in-memory user state. Old browser bearer
+  tokens are cleared and are no longer sent.
+- Session lifetime middleware enforces both the idle timeout and the absolute
+  lifetime on protected browser API routes. `SESSION_DRIVER` is server-side;
+  the sample uses the database driver, while local `.env` may choose file.
+- Added backend role middleware and applied role boundaries to API route groups.
+  Admin-only changes now include student/teacher/class CRUD, class enrollment,
+  location/catalog/settings management, timetable writes, permission grants,
+  and attendance deletion. Teachers only see students, class details, attendance,
+  and timetable records associated with their assigned classes.
+- Attendance endpoints now verify class ownership and student enrollment.
+  Removed the unauthenticated Telegram test endpoint, rate-limited public student
+  lookup, capped public request text, and added timeouts to Telegram requests.
+- Added security response headers, input limits for school settings, and a
+  production guard that skips demo seeding unless `SEED_DEMO_DATA=true` is
+  deliberately configured.
+- Restricted credentialed CORS to configured frontend origins; configure
+  `CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` for the production
+  website before deployment. Keep frontend and API on the same site where
+  possible so `SameSite=Lax` cookies work without cross-site cookie settings.
+- React's normal JSX rendering escapes text, and a source scan found no
+  `dangerouslySetInnerHTML` usage. Continue avoiding raw HTML injection and set
+  a frontend Content-Security-Policy at the web host as an additional XSS layer.
+- Earlier role-boundary API checks confirmed teacher access limits before the
+  cookie-auth migration; the temporary test token was deleted afterward.
+- Current verification: Laravel Pint, PHP syntax, API route discovery, Sanctum
+  CSRF route presence, credentialed CORS/stateful-domain config, frontend
+  TypeScript/build, and `git diff --check` pass. Browser API integration could
+  not be exercised because no backend is listening on `localhost:8010` here.
+  The build still reports the existing large JavaScript chunk warning; the full
+  automated feature suite was not run.
 
 ### Demo login
 

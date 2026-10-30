@@ -3,30 +3,38 @@
 namespace App\Http\Controllers\Modules\User\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+        $credentials = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        $user = User::where('email', mb_strtolower(trim($credentials['email'])))->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password) || ! in_array($user->role, ['admin', 'teacher'], true)) {
             return response()->json([
-                'message' => 'Invalid credentials'
+                'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        $user = $request->user();
-        $token = $user->createToken('api-token')->plainTextToken;
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
+        $now = now()->timestamp;
+        $request->session()->put([
+            'auth_started_at' => $now,
+            'auth_last_activity_at' => $now,
+        ]);
 
         return response()->json([
             'user' => $user,
-            'token' => $token,
         ]);
     }
 
@@ -37,10 +45,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
-            'message' => 'Logged out successfully'
+            'message' => 'Logged out successfully.',
         ]);
     }
 }

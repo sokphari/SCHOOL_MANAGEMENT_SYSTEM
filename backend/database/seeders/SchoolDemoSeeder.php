@@ -18,6 +18,12 @@ class SchoolDemoSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction() && ! config('app.seed_demo_data')) {
+            $this->command?->warn('Demo seeding skipped in production. Set SEED_DEMO_DATA=true only for a deliberate demo deployment.');
+
+            return;
+        }
+
         $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [

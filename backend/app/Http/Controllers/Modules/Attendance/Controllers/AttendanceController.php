@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Modules\Attendance\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Modules\Attendance\Requests\BulkAttendanceRequest;
 use App\Http\Controllers\Modules\Attendance\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\SchoolClass;
+use App\Models\Teacher;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -18,35 +20,48 @@ class AttendanceController extends Controller
         $query = Attendance::with(['student', 'schoolClass', 'marker']);
 
         if ($user->role === 'teacher') {
-            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            $teacher = Teacher::where('user_id', $user->id)->first();
 
-            if (!$teacher) {
+            if (! $teacher) {
                 return response()->json([
-                    'message' => 'Teacher profile is not linked to this user.'
+                    'message' => 'Teacher profile is not linked to this user.',
                 ], 404);
             }
 
-            $classIds = \App\Models\SchoolClass::where('teacher_id', $teacher->id)->pluck('id');
+            $classIds = SchoolClass::where('teacher_id', $teacher->id)->pluck('id');
             $query->whereIn('school_class_id', $classIds);
         }
 
         return response()->json($query->latest('attendance_date')->paginate(10));
     }
-    public function bulkStore(\App\Http\Controllers\Modules\Attendance\Requests\BulkAttendanceRequest $request, \App\Models\SchoolClass $class)
+
+    public function bulkStore(BulkAttendanceRequest $request, SchoolClass $class)
     {
         $user = auth()->user();
 
         if ($user->role === 'teacher') {
-            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            $teacher = Teacher::where('user_id', $user->id)->first();
 
-            if (!$teacher || $class->teacher_id !== $teacher->id) {
+            if (! $teacher || (int) $class->teacher_id !== (int) $teacher->id) {
                 return response()->json([
-                    'message' => 'Unauthorized'
+                    'message' => 'Unauthorized',
                 ], 403);
             }
         }
 
         $data = $request->validated();
+        $class->load('students');
+        $classStudentIds = $class->students->pluck('id')->toArray();
+
+        $unassignedStudentIds = collect($data['records'])
+            ->pluck('student_id')
+            ->diff($classStudentIds);
+        if ($unassignedStudentIds->isNotEmpty()) {
+            return response()->json([
+                'message' => 'Every attendance record must belong to a student in this class.',
+                'student_ids' => $unassignedStudentIds->values(),
+            ], 422);
+        }
 
         if ($this->attendanceTrackingBlocked($class, $data['attendance_date'])) {
             return response()->json([
@@ -80,21 +95,14 @@ class AttendanceController extends Controller
             ->where('attendance_date', $data['attendance_date'])
             ->exists()) {
             return response()->json([
-                'message' => 'Attendance has already been submitted and cannot be changed by a teacher.'
+                'message' => 'Attendance has already been submitted and cannot be changed by a teacher.',
             ], 403);
         }
-
-        $class->load('students');
-        $classStudentIds = $class->students->pluck('id')->toArray();
 
         $saved = [];
 
         foreach ($data['records'] as $record) {
-            if (!in_array($record['student_id'], $classStudentIds)) {
-                continue;
-            }
-
-            $attendance = \App\Models\Attendance::updateOrCreate(
+            $attendance = Attendance::updateOrCreate(
                 [
                     'student_id' => $record['student_id'],
                     'school_class_id' => $class->id,
@@ -116,23 +124,23 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function teacherPermissionAvailability(Request $request, \App\Models\SchoolClass $class)
+    public function teacherPermissionAvailability(Request $request, SchoolClass $class)
     {
         $data = $request->validate(['date' => ['required', 'date']]);
         $user = auth()->user();
+
+        if ($user->role === 'teacher') {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if (! $teacher || (int) $class->teacher_id !== (int) $teacher->id) {
+                return response()->json(['message' => 'Unauthorized'], 404);
+            }
+        }
 
         if ($this->attendanceTrackingBlocked($class, $data['date'])) {
             return response()->json([
                 'message' => $this->attendanceBlockedMessage($class),
                 'availability' => [],
             ], 403);
-        }
-
-        if ($user->role === 'teacher') {
-            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
-            if (!$teacher || $class->teacher_id !== $teacher->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
         }
 
         $date = Carbon::parse($data['date']);
@@ -146,7 +154,7 @@ class AttendanceController extends Controller
             ->pluck('student_id')
             ->flip();
         $availability = $studentIds->mapWithKeys(fn ($studentId) => [
-            $studentId => $user->role === 'admin' || !$usedStudentIds->has($studentId),
+            $studentId => $user->role === 'admin' || ! $usedStudentIds->has($studentId),
         ]);
 
         return response()->json([
@@ -161,6 +169,10 @@ class AttendanceController extends Controller
         $data = $request->validated();
 
         $class = SchoolClass::findOrFail($data['school_class_id']);
+        $this->requireClassAccess($class);
+        if (! $class->students()->whereKey($data['student_id'])->exists()) {
+            return response()->json(['message' => 'The selected student is not assigned to this class.'], 422);
+        }
         if ($this->attendanceTrackingBlocked($class, $data['attendance_date'])) {
             return response()->json([
                 'message' => $this->attendanceBlockedMessage($class),
@@ -179,7 +191,7 @@ class AttendanceController extends Controller
 
             if ($alreadyGranted) {
                 return response()->json([
-                    'message' => 'This student has already received permission this week.'
+                    'message' => 'This student has already received permission this week.',
                 ], 403);
             }
         }
@@ -191,7 +203,7 @@ class AttendanceController extends Controller
 
         if ($exists) {
             return response()->json([
-                'message' => 'Attendance already recorded'
+                'message' => 'Attendance already recorded',
             ], 422);
         }
 
@@ -206,11 +218,11 @@ class AttendanceController extends Controller
 
         return response()->json([
             'message' => 'Attendance marked successfully',
-            'data' => $attendance
+            'data' => $attendance,
         ], 201);
     }
 
-    public function grantPermissionRange(Request $request, \App\Models\SchoolClass $class)
+    public function grantPermissionRange(Request $request, SchoolClass $class)
     {
         if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'Only admins can grant permission date ranges.'], 403);
@@ -223,6 +235,10 @@ class AttendanceController extends Controller
             'note' => ['required', 'string', 'max:1000'],
         ]);
 
+        if (Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) > 90) {
+            return response()->json(['message' => 'Permission date ranges cannot exceed 90 days.'], 422);
+        }
+
         if ($this->attendanceTrackingBlocked($class, $data['start_date']) || $this->attendanceTrackingBlocked($class, $data['end_date'])) {
             return response()->json([
                 'message' => $this->attendanceBlockedMessage($class),
@@ -230,7 +246,7 @@ class AttendanceController extends Controller
         }
 
         $studentIsInClass = $class->students()->where('students.id', $data['student_id'])->exists();
-        if (!$studentIsInClass) {
+        if (! $studentIsInClass) {
             return response()->json(['message' => 'The selected student is not assigned to this class.'], 422);
         }
 
@@ -258,6 +274,8 @@ class AttendanceController extends Controller
 
     public function show(Attendance $attendance)
     {
+        $this->requireClassAccess($attendance->schoolClass);
+
         return response()->json(
             $attendance->load(['student', 'schoolClass', 'marker'])
         );
@@ -268,14 +286,17 @@ class AttendanceController extends Controller
         $attendance->delete();
 
         return response()->json([
-            'message' => 'Attendance deleted successfully'
+            'message' => 'Attendance deleted successfully',
         ]);
     }
 
-    public function byClassAndDate($classId, $date)
+    public function byClassAndDate(SchoolClass $class, string $date)
     {
+        $this->requireClassAccess($class);
+        validator(['date' => $date], ['date' => ['required', 'date']])->validate();
+
         $attendances = Attendance::with('student')
-            ->where('school_class_id', $classId)
+            ->where('school_class_id', $class->id)
             ->where('attendance_date', $date)
             ->get();
 
@@ -297,6 +318,18 @@ class AttendanceController extends Controller
         if ($class->status !== 'active') {
             return 'Attendance tracking is disabled because this class is inactive.';
         }
+
         return 'Attendance tracking is disabled on or after the scheduled class end date.';
+    }
+
+    private function requireClassAccess(SchoolClass $class): void
+    {
+        $user = auth()->user();
+        if ($user?->role !== 'teacher') {
+            return;
+        }
+
+        $teacherId = Teacher::where('user_id', $user->id)->value('id');
+        abort_unless($teacherId && (int) $class->teacher_id === (int) $teacherId, 404);
     }
 }

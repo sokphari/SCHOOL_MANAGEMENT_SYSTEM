@@ -1,19 +1,36 @@
 import axios from "axios";
+const apiBaseURL = import.meta.env.VITE_API_URL || "http://localhost:8010/api";
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+    baseURL: apiBaseURL,
+    withCredentials: true,
+    withXSRFToken: true,
+    xsrfCookieName: "XSRF-TOKEN",
+    xsrfHeaderName: "X-XSRF-TOKEN",
     headers:{
         Accept: "application/json",
         "Content-Type": "application/json",
     }
 })
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new Event("auth:session-expired"));
+    }
 
-  return config;
+    return Promise.reject(error);
+  },
+);
+
+export const csrfApi = axios.create({
+  baseURL: apiBaseURL.replace(/\/api\/?$/, ""),
+  withCredentials: true,
+  withXSRFToken: true,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
+  headers: { Accept: "application/json" },
 });
 
 export default api;

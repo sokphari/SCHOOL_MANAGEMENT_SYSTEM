@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'seed_demo_data' => (bool) env('SEED_DEMO_DATA', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

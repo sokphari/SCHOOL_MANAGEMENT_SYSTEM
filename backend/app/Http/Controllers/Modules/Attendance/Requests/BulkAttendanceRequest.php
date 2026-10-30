@@ -15,10 +15,10 @@ class BulkAttendanceRequest extends FormRequest
     {
         return [
             'attendance_date' => ['required', 'date'],
-            'records' => ['required', 'array', 'min:1'],
-            'records.*.student_id' => ['required', 'exists:students,id'],
+            'records' => ['required', 'array', 'min:1', 'max:500'],
+            'records.*.student_id' => ['required', 'integer', 'distinct', 'exists:students,id'],
             'records.*.status' => ['required', 'in:present,absent,late,excused'],
-            'records.*.note' => ['nullable', 'string'],
+            'records.*.note' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

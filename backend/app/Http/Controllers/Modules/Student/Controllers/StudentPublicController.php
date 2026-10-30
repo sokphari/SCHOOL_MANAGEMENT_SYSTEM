@@ -9,22 +9,23 @@ class StudentPublicController extends Controller
 {
     public function findByCode($student_code)
     {
-        $student = Student::with('classes')
+        $student = Student::with(['classes' => fn ($query) => $query->where('status', 'active')])
             ->where('student_code', $student_code)
+            ->where('status', 'active')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json([
-                'message' => 'Student not found'
+                'message' => 'Student not found',
             ], 404);
         }
 
         return response()->json([
             'id' => $student->id,
             'student_code' => $student->student_code,
-            'name' => $student->first_name . ' ' . $student->last_name,
+            'name' => $student->first_name.' '.$student->last_name,
             'class_names' => $student->classes->map(function ($class) {
-                return $class->name . ($class->section ? " ({$class->section})" : "");
+                return $class->name.($class->section ? " ({$class->section})" : '');
             })->values(),
         ]);
     }

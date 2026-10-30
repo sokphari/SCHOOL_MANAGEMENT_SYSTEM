@@ -17,7 +17,11 @@ class UpdateTeacherRequest extends FormRequest
         $teacherId = $this->route('teacher')->id;
 
         return [
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where('role', 'teacher'),
+                Rule::unique('teachers', 'user_id')->ignore($teacherId),
+            ],
             'teacher_code' => [
                 'required',
                 'string',
