@@ -6,8 +6,10 @@ import { getClasses } from "@/modules/classes/api/classApi";
 import { getClassTerms } from "@/modules/grades/api/gradeApi";
 import type { GradingTerm } from "@/modules/grades/types/grade";
 import type { SchoolClass } from "@/modules/classes/types/class";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 export default function GradesPage() {
+  const { user } = useAuth();
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [terms, setTerms] = useState<GradingTerm[]>([]);
@@ -41,14 +43,14 @@ export default function GradesPage() {
   const className = classes.find((item) => String(item.id) === selectedClass)?.name || "Selected class";
 
   return (
-    <main className="space-y-5 p-5 sm:p-7">
+    <main className="w-full min-w-0 space-y-5 p-0">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-1 text-[11px] font-bold uppercase tracking-[1.4px] text-brand">Academic records</p>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Grades &amp; Scores</h1>
           <p className="mb-0 mt-1 text-sm text-muted">Manage each term’s attendance, activity, and exam scores.</p>
         </div>
-        {selectedClass && <Link to={`/admin/grades/classes/${selectedClass}/terms/create`} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white no-underline hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} />Create term</Link>}
+        {selectedClass && user?.role === "admin" && <Link to={`/admin/grades/classes/${selectedClass}/terms/create`} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white no-underline hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} />Create term</Link>}
       </header>
 
       <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">

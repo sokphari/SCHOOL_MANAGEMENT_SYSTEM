@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import { deleteTimetableSession, getTimetable } from "@/modules/timetable/api/timetableApi";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import type { TimetableSession } from "@/modules/timetable/types/timetable";
 
 const weekdays = [

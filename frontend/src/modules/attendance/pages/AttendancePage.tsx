@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { faBookOpen, faCalendarCheck, faCalendarDays, faCheck, faChevronDown, faCircleCheck, faCircleXmark, faClock, faMagnifyingGlass, faUsers } from "@fortawesome/free-solid-svg-icons";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { getClasses, getClass } from "@/modules/classes/api/classApi.ts";
 import { bulkSaveAttendance, getAttendanceByClassAndDate, getTeacherPermissionAvailability, grantPermissionRange } from "@/modules/attendance/api/attendanceApi.ts";
 import type { AttendanceDraft, ClassAttendanceRecord } from "@/modules/attendance/types/attendance";
@@ -40,6 +40,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 export default function AttendancePage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const canRecordAttendance = user?.role === "admin" || Boolean(user?.feature_permissions?.includes("attendance.record"));
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass] = useState(() => searchParams.get("class_id") || "");
   const [attendanceDate] = useState(getLocalDateString);
@@ -155,7 +156,7 @@ export default function AttendancePage() {
   };
 
   const persistAttendance = async (nextRecords: AttendanceDraft[]) => {
-    if (!selectedClass || !attendanceDate || nextRecords.length === 0 || teacherLocked || classAttendanceClosed || submitting) return;
+    if (!canRecordAttendance || !selectedClass || !attendanceDate || nextRecords.length === 0 || teacherLocked || classAttendanceClosed || submitting) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -179,7 +180,7 @@ export default function AttendancePage() {
   };
 
   const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
-    if (teacherLocked || classAttendanceClosed || submitting) return;
+    if (!canRecordAttendance || teacherLocked || classAttendanceClosed || submitting) return;
     const nextRecords = records.map((record) => record.student_id === studentId ? { ...record, status } : record);
     setRecords(nextRecords);
     setDirty(true);
@@ -188,7 +189,7 @@ export default function AttendancePage() {
   };
 
   const handleNoteChange = (studentId: number, note: string) => {
-    if (teacherLocked || classAttendanceClosed || submitting) return;
+    if (!canRecordAttendance || teacherLocked || classAttendanceClosed || submitting) return;
     setRecords((current) => current.map((record) => record.student_id === studentId ? { ...record, note } : record));
     setDirty(true);
     setMessage(null);
@@ -245,7 +246,7 @@ export default function AttendancePage() {
           {attendanceOptions.map((option) => {
             const selected = record.status === option.value;
             const permissionUnavailable = option.value === "excused" && user?.role === "teacher" && permissionAvailability[String(record.student_id)] !== true;
-            const disabled = teacherLocked || classAttendanceClosed || submitting || permissionUnavailable;
+            const disabled = !canRecordAttendance || teacherLocked || classAttendanceClosed || submitting || permissionUnavailable;
             const title = permissionUnavailable ? "This student has already received permission this week" : option.value === "excused" ? "For in-person student requests; one permission per student per week" : option.label;
             return <button key={option.value} type="button" aria-pressed={selected} title={title} disabled={disabled} onClick={() => handleStatusChange(record.student_id, option.value)} className={`min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
           })}
@@ -255,7 +256,7 @@ export default function AttendancePage() {
     {
       key: "note",
       title: "Note",
-      render: (record) => <input aria-label={`Note for ${record.student_name}`} value={record.note} onChange={(event) => handleNoteChange(record.student_id, event.currentTarget.value)} onBlur={() => { if (dirty && !submitting) void persistAttendance(records); }} disabled={teacherLocked || classAttendanceClosed || submitting} placeholder="Optional note" className="min-w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-60" />,
+      render: (record) => <input aria-label={`Note for ${record.student_name}`} value={record.note} onChange={(event) => handleNoteChange(record.student_id, event.currentTarget.value)} onBlur={() => { if (dirty && !submitting) void persistAttendance(records); }} disabled={!canRecordAttendance || teacherLocked || classAttendanceClosed || submitting} placeholder="Optional note" className="min-w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-60" />,
     },
   ];
 

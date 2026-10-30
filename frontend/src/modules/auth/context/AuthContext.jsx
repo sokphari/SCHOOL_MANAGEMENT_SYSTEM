@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { csrfCookieApi, loginApi, meApi, logoutApi } from "@/modules/auth/api/authApi";
-
-const AuthContext = createContext();
+import { AuthContext } from "@/modules/auth/context/authContext";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -55,5 +54,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

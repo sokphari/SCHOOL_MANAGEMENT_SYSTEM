@@ -52,7 +52,7 @@ export default function StudentRequestScanPage() {
     if (codeFromUrl) {
       loadStudent(codeFromUrl);
     }
-  }, []);
+  }, [searchParams]);
 
   const handleScan = async (detectedCodes) => {
     const firstCode = detectedCodes?.[0]?.rawValue;

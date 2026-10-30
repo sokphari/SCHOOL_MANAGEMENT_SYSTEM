@@ -3,8 +3,10 @@
 use App\Http\Controllers\Modules\Location\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin,teacher'])
+    ->get('/locations/buildings', [LocationController::class, 'buildings']);
+
 Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin'])->prefix('locations')->group(function () {
-    Route::get('/buildings', [LocationController::class, 'buildings']);
     Route::post('/buildings', [LocationController::class, 'storeBuilding']);
     Route::put('/buildings/{building}', [LocationController::class, 'updateBuilding']);
     Route::delete('/buildings/{building}', [LocationController::class, 'destroyBuilding']);

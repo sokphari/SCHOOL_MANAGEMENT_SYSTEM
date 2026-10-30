@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faMoon, faSun, faXmark } from "@fortawesome/free-solid-svg-icons";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import NotificationBell from "@/modules/student-requests/components/NotificationBell";
 import Sidebar from "@/shared/layout/Sidebar";
 
@@ -45,7 +45,7 @@ export default function AppLayout() {
         />
       )}
 
-      <div className="flex min-h-screen min-w-0 flex-col lg:ml-[264px]">
+      <div className="flex min-h-screen min-w-0 flex-col lg:ml-[288px]">
         <header className="sticky top-0 z-20 flex min-h-[82px] items-center justify-between gap-5 border-b border-border bg-surface px-[clamp(18px,2.3vw,32px)] py-3 max-[560px]:min-h-[72px] max-[560px]:gap-2 max-[560px]:px-3.5 max-[560px]:py-2.5">
           <div className="flex items-center gap-3">
             <button
@@ -75,7 +75,7 @@ export default function AppLayout() {
               <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(85,214,160,0.12)]" />
               Live
             </span>
-            <NotificationBell />
+            {user?.role === "admin" && <NotificationBell />}
             <button
               className="grid size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong max-[560px]:size-[35px]"
               type="button"
@@ -97,7 +97,7 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1800px] flex-1 px-[clamp(18px,2.3vw,32px)] py-[clamp(18px,2vw,28px)] pb-8 max-[560px]:px-3.5 max-[560px]:py-[18px] max-[560px]:pb-6">
+        <main className="w-full flex-1 px-[clamp(18px,2.3vw,32px)] py-[clamp(18px,2vw,28px)] pb-8 max-[560px]:px-3.5 max-[560px]:py-[18px] max-[560px]:pb-6">
           <Outlet />
         </main>
       </div>

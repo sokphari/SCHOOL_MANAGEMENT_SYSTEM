@@ -5,7 +5,7 @@ import axios from "axios";
 import { faArrowLeft, faBookOpen, faCalendarDays, faCalendarCheck, faChalkboardUser, faDoorOpen, faEye, faPenToSquare, faRightLeft, faTrash, faUsers, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { getClass, getClasses, removeStudentFromClass, transferStudentToClass } from "@/modules/classes/api/classApi.ts";
 import { bulkSaveAttendance, getAttendanceByClassAndDate, getTeacherPermissionAvailability } from "@/modules/attendance/api/attendanceApi.ts";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import AppTable from "@/shared/components/AppTable.tsx";
 import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
 import type { ClassDetails } from "@/modules/classes/api/classApi.ts";
@@ -36,6 +36,7 @@ export default function ClassDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const canRecordAttendance = user?.role === "admin" || Boolean(user?.feature_permissions?.includes("attendance.record"));
   const [classData, setClassData] = useState<ClassDetails | null>(null);
   const [students, setStudents] = useState<ClassStudent[]>([]);
   const [attendanceByStudent, setAttendanceByStudent] = useState<Record<number, ClassAttendanceStatus>>({});
@@ -153,13 +154,13 @@ export default function ClassDetailPage() {
   };
 
   const handleAttendanceChange = (studentId: number, status: ClassAttendanceStatus) => {
-    if (!trackingAttendance || savingAttendance || isClassAttendanceClosed(classData)) return;
+    if (!canRecordAttendance || !trackingAttendance || savingAttendance || isClassAttendanceClosed(classData)) return;
     setAttendanceByStudent((current) => ({ ...current, [studentId]: status }));
     setAttendanceDirty(true);
   };
 
   const handleStartAttendanceTracking = () => {
-    if (trackingAttendance || students.length === 0 || isClassAttendanceClosed(classData)) return;
+    if (!canRecordAttendance || trackingAttendance || students.length === 0 || isClassAttendanceClosed(classData)) return;
     const hasUnmarkedStudents = students.some((student) => !attendanceByStudent[student.id]);
     setAttendanceByStudent((current) => Object.fromEntries(
       students.map((student) => [student.id, current[student.id] ?? "present"]),
@@ -169,7 +170,7 @@ export default function ClassDetailPage() {
   };
 
   const handleSaveAttendance = async () => {
-    if (!id || !trackingAttendance || savingAttendance || !attendanceDirty || students.length === 0 || isClassAttendanceClosed(classData)) return;
+    if (!canRecordAttendance || !id || !trackingAttendance || savingAttendance || !attendanceDirty || students.length === 0 || isClassAttendanceClosed(classData)) return;
     setSavingAttendance(true);
     try {
       await bulkSaveAttendance(id, {
@@ -219,7 +220,7 @@ export default function ClassDetailPage() {
             const selected = (attendanceByStudent[student.id] ?? "present") === option.value;
             const permissionUnavailable = option.value === "excused" && user?.role === "teacher" && permissionAvailability[student.id] !== true;
             const permissionHint = permissionUnavailable ? "This student has already received permission this week" : "For an in-person request to Admin; one permission per student per week";
-            return <button key={option.value} type="button" aria-pressed={selected} title={option.value === "excused" ? permissionHint : option.label} disabled={!trackingAttendance || savingAttendance || permissionUnavailable || attendanceClosed} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-10 min-w-[78px] flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
+            return <button key={option.value} type="button" aria-pressed={selected} title={option.value === "excused" ? permissionHint : option.label} disabled={!canRecordAttendance || !trackingAttendance || savingAttendance || permissionUnavailable || attendanceClosed} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-10 min-w-[78px] flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
           })}
         </div>
       ),
@@ -284,8 +285,8 @@ export default function ClassDetailPage() {
           <div className="flex items-center gap-2">
             {attendanceClosed && <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 text-sm font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><FontAwesomeIcon icon={faCalendarCheck} />Attendance closed</span>}
             {!attendanceClosed && trackingAttendance && <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-600 dark:text-emerald-300"><FontAwesomeIcon icon={faCalendarCheck} />Tracking active</span>}
-            {!attendanceClosed && !trackingAttendance && <button type="button" onClick={handleStartAttendanceTracking} disabled={students.length === 0 || (user?.role === "teacher" && hasSavedAttendance)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-brand px-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{hasSavedAttendance ? user?.role === "teacher" ? "Tracked already" : "Edit attendance" : "Track attendance"}</button>}
-            {!attendanceClosed && trackingAttendance && <button type="button" onClick={handleSaveAttendance} disabled={!attendanceDirty || savingAttendance} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-brand px-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{savingAttendance ? "Saving…" : "Save attendance"}</button>}
+            {canRecordAttendance && !attendanceClosed && !trackingAttendance && <button type="button" onClick={handleStartAttendanceTracking} disabled={students.length === 0 || (user?.role === "teacher" && hasSavedAttendance)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-brand px-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{hasSavedAttendance ? user?.role === "teacher" ? "Tracked already" : "Edit attendance" : "Track attendance"}</button>}
+            {canRecordAttendance && !attendanceClosed && trackingAttendance && <button type="button" onClick={handleSaveAttendance} disabled={!attendanceDirty || savingAttendance} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-brand px-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"><FontAwesomeIcon icon={faCalendarCheck} />{savingAttendance ? "Saving…" : "Save attendance"}</button>}
           </div>
         </div>
         {attendanceClosed && <p className="m-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200 sm:px-5">{attendanceClosedMessage}</p>}

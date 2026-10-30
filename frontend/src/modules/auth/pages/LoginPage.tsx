@@ -3,7 +3,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faEye, faEyeSlash, faLock, faMoon, faSchool, faShieldHalved, faSpinner, faSun, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 interface LoginCredentials {
   email: string;

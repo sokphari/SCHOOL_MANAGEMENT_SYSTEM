@@ -32,7 +32,7 @@ export default function AppSelect({
 }: AppSelectProps) {
   return (
     <div className={`${containerClassName} min-w-0`}>
-      {label && <label htmlFor={name} className="mb-1.5 block text-[13px] font-semibold text-secondary">{label}</label>}
+      {label && <label htmlFor={name} className="mb-1.5 block text-[13px] font-semibold text-secondary">{label}{required && <span aria-hidden="true" className="ml-1 text-rose-500">*</span>}</label>}
       <select
         id={name}
         name={name}

@@ -63,8 +63,13 @@ class SchoolClassController extends Controller
 
     public function store(StoreSchoolClassRequest $request)
     {
-        $this->requireAdmin();
         $data = $request->validated();
+        if (auth()->user()?->role === 'teacher') {
+            $teacherId = Teacher::where('user_id', auth()->id())->value('id');
+            abort_unless($teacherId, 403, 'Your account is not linked to a teacher profile.');
+            $data['teacher_id'] = $teacherId;
+            $data['status'] = 'active';
+        }
         $this->storeLocationNames($data);
         $this->storeCourseLessonNames($data);
         $schoolClass = SchoolClass::create($data);
@@ -84,10 +89,27 @@ class SchoolClassController extends Controller
         );
     }
 
+    public function availableStudents(SchoolClass $class)
+    {
+        $this->requireClassAccess($class);
+
+        return response()->json(
+            Student::query()
+                ->where('status', 'active')
+                ->whereDoesntHave('classes', fn ($query) => $query->whereKey($class->id))
+                ->orderBy('first_name')
+                ->get(['id', 'student_code', 'first_name', 'last_name', 'gender', 'phone'])
+        );
+    }
+
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class)
     {
-        $this->requireAdmin();
+        $this->requireClassAccess($class);
         $data = $request->validated();
+        if (auth()->user()?->role === 'teacher') {
+            $data['teacher_id'] = Teacher::where('user_id', auth()->id())->value('id');
+            $data['status'] = $class->status;
+        }
         $this->storeLocationNames($data);
         $this->storeCourseLessonNames($data);
         $class->update($data);
@@ -110,9 +132,7 @@ class SchoolClassController extends Controller
 
     public function scheduleEnd(Request $request, SchoolClass $class)
     {
-        if (auth()->user()?->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can schedule a class end date.'], 403);
-        }
+        $this->requireClassAccess($class);
 
         $data = $request->validate([
             'end_date' => ['required', 'date', 'after_or_equal:today'],
@@ -128,9 +148,7 @@ class SchoolClassController extends Controller
 
     public function preEnd(SchoolClass $class)
     {
-        if (auth()->user()?->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can pre-end a class.'], 403);
-        }
+        $this->requireClassAccess($class);
 
         $class->update(['pre_end_at' => now()]);
 
@@ -142,9 +160,7 @@ class SchoolClassController extends Controller
 
     public function resume(SchoolClass $class)
     {
-        if (auth()->user()?->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can resume a class.'], 403);
-        }
+        $this->requireClassAccess($class);
 
         $class->update(['pre_end_at' => null, 'end_date' => null]);
 
@@ -156,8 +172,8 @@ class SchoolClassController extends Controller
 
     public function assignStudent($classId, $studentId)
     {
-        $this->requireAdmin();
         $class = SchoolClass::findOrFail($classId);
+        $this->requireClassAccess($class);
         $student = Student::findOrFail($studentId);
 
         $class->students()->syncWithoutDetaching([
@@ -231,9 +247,7 @@ class SchoolClassController extends Controller
 
     public function switchTeacher(Request $request, SchoolClass $class)
     {
-        if (auth()->user()?->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can change a class teacher.'], 403);
-        }
+        $this->requireClassAccess($class);
 
         $data = $request->validate([
             'teacher_id' => ['required', 'integer', 'exists:teachers,id'],
@@ -268,7 +282,7 @@ class SchoolClassController extends Controller
 
     private function requireAdmin(): void
     {
-        abort_unless(auth()->user()?->role === 'admin', 403, 'Only admins can modify classes.');
+        abort_unless(auth()->user()?->role === 'admin', 403, 'Only admins can modify this class action.');
     }
 
     private function requireClassAccess(SchoolClass $class): void

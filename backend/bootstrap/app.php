@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditApiMutations;
 use App\Http\Middleware\EnforceSessionLifetime;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->api(append: [AuditApiMutations::class]);
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'session.lifetime' => EnforceSessionLifetime::class,

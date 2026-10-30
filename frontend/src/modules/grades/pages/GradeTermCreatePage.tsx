@@ -35,7 +35,7 @@ export default function GradeTermCreatePage() {
   };
 
   return (
-    <main className="space-y-4 p-5 sm:p-7">
+    <main className="w-full min-w-0 space-y-4 p-0">
       <Link to="/admin/grades" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary no-underline hover:border-brand/50 hover:text-brand"><FontAwesomeIcon icon={faArrowLeft} />Back to grades</Link>
       <form onSubmit={submit} className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="flex items-center gap-4 border-b border-border bg-brand-soft/40 px-5 py-5 sm:px-7">

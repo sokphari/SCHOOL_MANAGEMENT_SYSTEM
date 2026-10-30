@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { getDashboard } from "@/modules/dashboard/api/dashboardApi";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import GenderChart from "@/modules/dashboard/components/charts/GenderChart";
 import RequestChart from "@/modules/dashboard/components/charts/RequestChart";
 import type { ApiErrorResponse, DashboardData } from "@/modules/dashboard/types/dashboard";

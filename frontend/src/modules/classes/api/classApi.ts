@@ -1,5 +1,6 @@
 import api from "@/shared/api/apiClient";
 import type { AxiosResponse } from "axios";
+import type { Student } from "@/modules/students/types/student";
 import type {
   ClassPage,
   ClassPayload,
@@ -16,11 +17,16 @@ export interface ClassEndPayload {
   end_date: string;
 }
 
+export type AvailableClassStudent = Pick<Student, "id" | "student_code" | "first_name" | "last_name" | "gender" | "phone">;
+
 export const getClasses = (params: ClassQuery = {}): Promise<AxiosResponse<ClassPage>> =>
   api.get<ClassPage>("/classes", { params });
 
 export const getClass = (id: string | number): Promise<AxiosResponse<ClassDetails>> =>
   api.get<ClassDetails>(`/classes/${id}`);
+
+export const getAvailableClassStudents = (id: string | number): Promise<AxiosResponse<AvailableClassStudent[]>> =>
+  api.get<AvailableClassStudent[]>(`/classes/${id}/available-students`);
 
 export const createClass = (data: ClassPayload): Promise<AxiosResponse<SchoolClass>> =>
   api.post<SchoolClass>("/classes", data);

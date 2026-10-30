@@ -11,10 +11,6 @@ class CourseController extends Controller
 {
     public function index()
     {
-        if ($response = $this->adminOnly()) {
-            return $response;
-        }
-
         return response()->json(Course::with(['lessons' => fn ($query) => $query->orderBy('lesson_number')->orderBy('name')])
             ->withCount(['lessons', 'schoolClasses'])
             ->orderBy('name')

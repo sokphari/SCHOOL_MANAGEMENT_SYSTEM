@@ -17,18 +17,26 @@ import {
   faUserPlus,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import { assignStudentToClass, getClass, getClasses, preEndClass, resumeClass, scheduleClassEnd, switchClassTeacher } from "@/modules/classes/api/classApi.ts";
-import { getStudents } from "@/modules/students/api/studentApi.ts";
+import { assignStudentToClass, getAvailableClassStudents, getClasses, preEndClass, resumeClass, scheduleClassEnd, switchClassTeacher } from "@/modules/classes/api/classApi.ts";
+import type { AvailableClassStudent } from "@/modules/classes/api/classApi.ts";
 import AppTable from "@/shared/components/AppTable.tsx";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
 import type { ClassFilters, SchoolClass } from "@/modules/classes/types/class";
-import type { Student } from "@/modules/students/types/student";
 
 const PAGE_SIZE = 8;
+
+interface ClassActionPermissions {
+  addStudents: boolean;
+  switchTeacher: boolean;
+  edit: boolean;
+  scheduleEnd: boolean;
+  preEnd: boolean;
+  resume: boolean;
+}
 
 function getTodayString() {
   const today = new Date();
@@ -42,7 +50,7 @@ export default function ClassesPage() {
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [filters, setFilters] = useState<ClassFilters>({ search: "", status: "", page: 1 });
   const [addingToClass, setAddingToClass] = useState<SchoolClass | null>(null);
-  const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
+  const [availableStudents, setAvailableStudents] = useState<AvailableClassStudent[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [studentGenderFilter, setStudentGenderFilter] = useState("");
   const [studentPhoneSearch, setStudentPhoneSearch] = useState("");
@@ -61,6 +69,15 @@ export default function ClassesPage() {
   const [teacherSwitchSuccess, setTeacherSwitchSuccess] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const canUseClassFeature = (feature: string) => user?.role === "admin" || Boolean(user?.feature_permissions?.includes(`classes.${feature}`));
+  const classActionPermissions: ClassActionPermissions = {
+    addStudents: canUseClassFeature("add_students"),
+    switchTeacher: canUseClassFeature("switch_teacher"),
+    edit: canUseClassFeature("edit"),
+    scheduleEnd: canUseClassFeature("schedule_end"),
+    preEnd: canUseClassFeature("pre_end"),
+    resume: canUseClassFeature("resume"),
+  };
 
   const fetchClasses = useCallback(async (currentFilters: ClassFilters) => {
     try {
@@ -151,12 +168,8 @@ export default function ClassesPage() {
     setAssignmentError("");
     setLoadingStudents(true);
     try {
-      const [classResponse, studentsResponse] = await Promise.all([
-        getClass(classItem.id),
-        getStudents({ per_page: 100, page: 1, status: "active" }),
-      ]);
-      const currentStudentIds = new Set((classResponse.data.students || []).map((student) => student.id));
-      setAvailableStudents((studentsResponse.data.data || []).filter((student) => !currentStudentIds.has(student.id)));
+      const studentsResponse = await getAvailableClassStudents(classItem.id);
+      setAvailableStudents(studentsResponse.data || []);
     } catch (error) {
       console.error(error);
       setAssignmentError("Could not load students for this class. Please try again.");
@@ -230,11 +243,13 @@ export default function ClassesPage() {
       key: "actions", title: "Actions", render: (row) => (
         <div className="flex items-center gap-1.5">
           <IconAction label="View class" onClick={() => navigate(`/admin/classes/${row.id}`)}><FontAwesomeIcon icon={faEye} /></IconAction>
-          {user?.role === "admin" && <>
-            <IconAction label="Edit class" onClick={() => navigate(`/admin/classes/${row.id}/edit`)}><FontAwesomeIcon icon={faPenToSquare} /></IconAction>
-            <IconAction label="Schedule class end" onClick={() => handleOpenEndClass(row)}><FontAwesomeIcon icon={faCalendarDays} /></IconAction>
-            <IconAction label={isClassEnded(row) || row.pre_end_at ? "Resume class" : "Pre-End attendance"} onClick={() => isClassEnded(row) || row.pre_end_at ? void handleResumeClass(row) : void handlePreEnd(row)}><FontAwesomeIcon icon={isClassEnded(row) || row.pre_end_at ? faBookOpen : faClock} /></IconAction>
-          </>}
+          {classActionPermissions.addStudents && <IconAction label="Add student" onClick={() => void handleOpenAddStudent(row)}><FontAwesomeIcon icon={faUserPlus} /></IconAction>}
+          {classActionPermissions.switchTeacher && <IconAction label="Switch teacher" onClick={() => { setSwitchingTeacherFor(row); setTeacherIdInput(""); setSwitchTeacherError(""); }}><FontAwesomeIcon icon={faChalkboardUser} /></IconAction>}
+          {classActionPermissions.edit && <IconAction label="Edit class" onClick={() => navigate(`/admin/classes/${row.id}/edit`)}><FontAwesomeIcon icon={faPenToSquare} /></IconAction>}
+          {classActionPermissions.scheduleEnd && !isClassEnded(row) && !row.pre_end_at && <IconAction label="Schedule class end" onClick={() => handleOpenEndClass(row)}><FontAwesomeIcon icon={faCalendarDays} /></IconAction>}
+          {classActionPermissions.resume && (isClassEnded(row) || row.pre_end_at)
+            ? <IconAction label="Resume class" onClick={() => void handleResumeClass(row)}><FontAwesomeIcon icon={faBookOpen} /></IconAction>
+            : classActionPermissions.preEnd && <IconAction label="Pre-End attendance" onClick={() => void handlePreEnd(row)}><FontAwesomeIcon icon={faClock} /></IconAction>}
         </div>
       ),
     },
@@ -251,7 +266,7 @@ export default function ClassesPage() {
           <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Classes</h1>
           <p className="mb-0 mt-1 text-sm text-secondary">View classes and manage teacher assignments.</p>
         </div>
-        {user?.role === "admin" && <button onClick={() => navigate("/admin/classes/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} /> Add class</button>}
+        {(user?.role === "admin" || user?.feature_permissions?.includes("classes.create")) && <button onClick={() => navigate("/admin/classes/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} /> Add class</button>}
       </section>
 
       {teacherSwitchSuccess && <p role="status" aria-live="polite" className="mb-2.5 mt-0 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{teacherSwitchSuccess}</p>}
@@ -270,7 +285,7 @@ export default function ClassesPage() {
           : classes.length === 0 ? <div className="grid min-h-56 place-items-center px-4 text-center"><div><span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-brand-soft text-xl text-brand"><FontAwesomeIcon icon={faBookOpen} /></span><p className="m-0 font-semibold text-primary">No classes found</p><p className="mb-0 mt-1 text-sm text-muted">Try changing your filters or search terms.</p></div></div>
           : viewMode === "table" ? <AppTable columns={columns} data={classes} /> : (
             <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-5">
-              {classes.map((classItem) => <ClassCard key={classItem.id} classItem={classItem} isAdmin={user?.role === "admin"} busy={busyClassId === classItem.id} onView={() => navigate(`/admin/classes/${classItem.id}`)} onAddStudent={() => void handleOpenAddStudent(classItem)} onEdit={() => navigate(`/admin/classes/${classItem.id}/edit`)} onSwitchTeacher={() => { setSwitchingTeacherFor(classItem); setTeacherIdInput(""); setSwitchTeacherError(""); }} onEnd={() => handleOpenEndClass(classItem)} onPreEnd={() => void handlePreEnd(classItem)} onResume={() => void handleResumeClass(classItem)} />)}
+              {classes.map((classItem) => <ClassCard key={classItem.id} classItem={classItem} permissions={classActionPermissions} busy={busyClassId === classItem.id} onView={() => navigate(`/admin/classes/${classItem.id}`)} onAddStudent={() => void handleOpenAddStudent(classItem)} onEdit={() => navigate(`/admin/classes/${classItem.id}/edit`)} onSwitchTeacher={() => { setSwitchingTeacherFor(classItem); setTeacherIdInput(""); setSwitchTeacherError(""); }} onEnd={() => handleOpenEndClass(classItem)} onPreEnd={() => void handlePreEnd(classItem)} onResume={() => void handleResumeClass(classItem)} />)}
             </div>
           )}
 
@@ -300,8 +315,8 @@ export default function ClassesPage() {
   );
 }
 
-interface ClassCardProps { classItem: SchoolClass; isAdmin: boolean; busy: boolean; onView: () => void; onAddStudent: () => void; onEdit: () => void; onSwitchTeacher: () => void; onEnd: () => void; onPreEnd: () => void; onResume: () => void }
-function ClassCard({ classItem, isAdmin, busy, onView, onAddStudent, onEdit, onSwitchTeacher, onEnd, onPreEnd, onResume }: ClassCardProps) {
+interface ClassCardProps { classItem: SchoolClass; permissions: ClassActionPermissions; busy: boolean; onView: () => void; onAddStudent: () => void; onEdit: () => void; onSwitchTeacher: () => void; onEnd: () => void; onPreEnd: () => void; onResume: () => void }
+function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit, onSwitchTeacher, onEnd, onPreEnd, onResume }: ClassCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -318,6 +333,10 @@ function ClassCard({ classItem, isAdmin, busy, onView, onAddStudent, onEdit, onS
     };
   }, [menuOpen]);
 
+  const ended = isClassEnded(classItem) || Boolean(classItem.pre_end_at);
+  const hasAvailableActions = permissions.addStudents || permissions.switchTeacher || permissions.edit
+    || permissions.scheduleEnd || permissions.preEnd || permissions.resume;
+
   return (
     <article className="flex h-full flex-col rounded-xl border border-border bg-surface-raised p-4 transition hover:border-brand/30 hover:shadow-card">
       <div className="mb-3 flex items-start gap-3">
@@ -325,15 +344,14 @@ function ClassCard({ classItem, isAdmin, busy, onView, onAddStudent, onEdit, onS
         <div className="min-w-0 flex-1"><h2 className="m-0 truncate text-base font-semibold text-primary"><TagBadge tone="purple">{classItem.name}</TagBadge></h2><p className="mb-0 mt-1 text-xs text-secondary">Class ID: <span className="font-semibold text-brand">{classItem.id}</span></p></div>
         <div className="relative flex shrink-0 items-center gap-1.5" ref={menuRef}>
           <StatusBadge classItem={classItem} />
-          {isAdmin && <button type="button" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={`More actions for ${classItem.name}`} title="More actions" onClick={() => setMenuOpen((open) => !open)} className="grid size-8 place-items-center rounded-lg border border-transparent text-muted transition hover:border-border hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faEllipsisVertical} /></button>}
-          {isAdmin && menuOpen && <div role="menu" className="absolute right-0 top-10 z-30 min-w-48 overflow-hidden rounded-xl border border-border bg-surface p-1.5 shadow-xl">
-            <MenuAction icon={<FontAwesomeIcon icon={faUserPlus} />} onClick={() => { setMenuOpen(false); onAddStudent(); }}>Add student</MenuAction>
-            <MenuAction icon={<FontAwesomeIcon icon={faChalkboardUser} />} onClick={() => { setMenuOpen(false); onSwitchTeacher(); }}>Switch teacher</MenuAction>
-            <MenuAction icon={<FontAwesomeIcon icon={faPenToSquare} />} onClick={() => { setMenuOpen(false); onEdit(); }}>Edit class</MenuAction>
-            <MenuAction icon={<FontAwesomeIcon icon={faCalendarDays} />} onClick={() => { setMenuOpen(false); onEnd(); }}>{classItem.end_date ? "Change end date" : "End class"}</MenuAction>
-            {isClassEnded(classItem) || classItem.pre_end_at
-              ? <MenuAction icon={<FontAwesomeIcon icon={faBookOpen} />} onClick={() => { setMenuOpen(false); onResume(); }} disabled={busy}>Resume class</MenuAction>
-              : <MenuAction icon={<FontAwesomeIcon icon={faClock} />} onClick={() => { setMenuOpen(false); onPreEnd(); }} disabled={busy}>Pre-End class</MenuAction>}
+          {hasAvailableActions && <button type="button" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={`More actions for ${classItem.name}`} title="More actions" onClick={() => setMenuOpen((open) => !open)} className="grid size-8 place-items-center rounded-lg border border-transparent text-muted transition hover:border-border hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faEllipsisVertical} /></button>}
+          {hasAvailableActions && menuOpen && <div role="menu" className="absolute right-0 top-10 z-30 min-w-48 overflow-hidden rounded-xl border border-border bg-surface p-1.5 shadow-xl">
+            {permissions.addStudents && <MenuAction icon={<FontAwesomeIcon icon={faUserPlus} />} onClick={() => { setMenuOpen(false); onAddStudent(); }}>Add student</MenuAction>}
+            {permissions.switchTeacher && <MenuAction icon={<FontAwesomeIcon icon={faChalkboardUser} />} onClick={() => { setMenuOpen(false); onSwitchTeacher(); }}>Switch teacher</MenuAction>}
+            {permissions.edit && <MenuAction icon={<FontAwesomeIcon icon={faPenToSquare} />} onClick={() => { setMenuOpen(false); onEdit(); }}>Edit class</MenuAction>}
+            {permissions.scheduleEnd && !ended && <MenuAction icon={<FontAwesomeIcon icon={faCalendarDays} />} onClick={() => { setMenuOpen(false); onEnd(); }}>{classItem.end_date ? "Change end date" : "End class"}</MenuAction>}
+            {!ended && permissions.preEnd && <MenuAction icon={<FontAwesomeIcon icon={faClock} />} onClick={() => { setMenuOpen(false); onPreEnd(); }} disabled={busy}>Pre-End class</MenuAction>}
+            {ended && permissions.resume && <MenuAction icon={<FontAwesomeIcon icon={faBookOpen} />} onClick={() => { setMenuOpen(false); onResume(); }} disabled={busy}>Resume class</MenuAction>}
           </div>}
         </div>
       </div>

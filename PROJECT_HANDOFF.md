@@ -581,14 +581,119 @@ repeating discovery work.
 - React's normal JSX rendering escapes text, and a source scan found no
   `dangerouslySetInnerHTML` usage. Continue avoiding raw HTML injection and set
   a frontend Content-Security-Policy at the web host as an additional XSS layer.
+- Vite production builds explicitly disable source maps. Build and serve the
+  generated `frontend/dist` assets in production; do not expose the Vite dev
+  server. Set `APP_DEBUG=false` in the production Laravel environment.
 - Earlier role-boundary API checks confirmed teacher access limits before the
   cookie-auth migration; the temporary test token was deleted afterward.
-- Current verification: Laravel Pint, PHP syntax, API route discovery, Sanctum
-  CSRF route presence, credentialed CORS/stateful-domain config, frontend
-  TypeScript/build, and `git diff --check` pass. Browser API integration could
-  not be exercised because no backend is listening on `localhost:8010` here.
-  The build still reports the existing large JavaScript chunk warning; the full
-  automated feature suite was not run.
+- Expanded `ApiEndpointsTest` to cover session login/logout, public requests,
+  CRUD across all modules, permission date ranges and weekly teacher limits,
+  attendance scoring, grade terms/scores, timetable conflicts, class lifecycle,
+  student transfer, and teacher switching. Laravel tests pass: 4 tests and 118
+  assertions using the isolated in-memory SQLite test database.
+- Live cookie smoke check passed against the running app: CSRF endpoint `204`,
+  login without CSRF `419`, login `200`, `/api/me` `200`, logout `200`, and
+  `/api/me` after logout `401`.
+- The tests exposed and fixed an ambiguous `status` column in public student
+  lookup by qualifying the school-class status column.
+- Current verification: Laravel Pint, PHP syntax, route discovery, frontend
+  lint, TypeScript checking, production build, and `git diff --check` pass. The
+  production build still reports the existing large JavaScript chunk warning.
+
+## Follow-up — Audit log (2026-10-30)
+
+- Added an append-only `audit_logs` table and backend audit service for API
+  mutations plus successful/failed login and logout events. Entries record the
+  actor, action, module, route/method, result code, IP, user agent, and optional
+  safe metadata; request bodies, passwords, and tokens are never captured.
+- API audit listing is available at `GET /api/audit-logs`, restricted to
+  authenticated admins. The admin-only `/admin/audit-logs` page supports search,
+  module/date filters, and pagination.
+- Failed audit writes are logged without interrupting the user action. Apply
+  the new migration with `php artisan migrate` before expecting the audit list
+  or login/logout audit events to persist.
+- Verification for this change: PHP syntax, Pint on changed PHP files, API
+  route discovery, frontend lint, TypeScript checking, and production build
+  passed. Local PHP feature tests could not connect to SQLite because the local
+  PHP runtime lacks the SQLite PDO driver; Docker-based test execution was also
+  unavailable because this session cannot access the Docker socket. The build
+  retains the existing large JavaScript chunk warning.
+- The admin sidebar now groups only implemented modules under Overview,
+  Academic management, Staff management, Operations, and Administration. Its
+  expandable Students, Teachers, Classes, and Audit log links retain their
+  existing routes and role/feature checks. Increased its desktop width to 288px
+  and enlarged the navigation labels/icons for readability; the main layout
+  offset matches the new width. Updated the product label and icons to match the
+  school management workspace.
+- Expandable Students, Teachers, and Classes navigation rows now link directly
+  to their list page when their label/icon is clicked; the separate chevron
+  only expands or collapses the submenu. Removed duplicate “View …” submenu
+  links; the submenu now contains only the create action.
+- Student, Teacher, and Class create forms now use clearer grouped sections,
+  three-column desktop field layouts, larger field spacing, and visible required
+  markers. Required inputs/selects use native browser validation. Teacher account
+  ID now explains that it is for an already-existing teacher login account.
+- The admin notification bell now opens an in-place dropdown with pending
+  student requests, successful/failed logins, logouts, blocked API access, and
+  rate-limited API attempts from today. Navigation happens only when an admin
+  clicks a notification's View button or list link; the bell itself does not
+  redirect. Teachers do not see this admin-only bell.
+- Fixed an audit service defect that built audit rows without calling `save()`,
+  which left the Audit Log and security notifications empty. The API middleware
+  now also records rejected/rate-limited API requests while avoiding duplicate
+  failed-login entries. Feature assertions cover login, logout, rejected access,
+  and failed login events.
+- Reworked the Audit Log submenu's Users feature into an admin/teacher account
+  directory with role, email, and last recorded activity. Added a Roles feature
+  where admins can allow/deny teachers access to Dashboard, Attendance,
+  Students, Classes, Timetable, and Grades. Admin permissions stay unrestricted.
+- Teacher module access is stored in `role_module_permissions`, exposed through
+  `/api/role-permissions/teacher`, returned on login and `/api/me`, reflected in
+  the sidebar/routes, and enforced by backend role middleware on every teacher
+  module request. Default teacher access preserves the existing six modules.
+- Added feature-level teacher permissions in `role_feature_permissions`. Each
+  module exposes its own feature checkboxes, and the API authorization middleware
+  checks both the module permission and the specific feature before serving a
+  teacher request. The login and `/api/me` payloads include allowed feature keys
+  for the frontend to hide unavailable actions. Run `php artisan migrate` to
+  apply `2026_10_31_000001_create_role_feature_permissions_table`.
+- Roles UI now allows enabling/disabling a whole module or individual features.
+  Turning off a module disables all of its features; turning it back on enables
+  them again. Admin access remains fully enabled and read-only.
+- Attendance recording and grade entry features require their related view
+  features to remain enabled. Student list/details/history, class list/details,
+  class creation, attendance viewing/recording, timetable viewing, and grade
+  viewing/entry are enforced separately. Teachers can create a class only when
+  `classes.create` is allowed; the backend assigns the new class to the logged-in
+  teacher regardless of any submitted teacher ID. Teacher class creation options
+  include active course and building data. The new migration
+  `2026_10_31_000002_add_teacher_create_class_permission` enables that feature
+  by default for existing teacher roles. Focused Laravel permission and class
+  creation tests passed (21 assertions total); frontend TypeScript checking and
+  ESLint passed after the update.
+- Teachers can now receive independent permissions for the class card actions:
+  Add student, Switch teacher, Edit class, Schedule end, Pre-End, and Resume.
+  The Roles screen exposes each permission; administrators remain unrestricted.
+  The API enforces the matching feature permission and limits teacher mutations
+  to classes assigned to their teacher profile. The available-students endpoint
+  also uses the class permission, so Add student does not depend on access to
+  the full Students module. Run `php artisan migrate` to apply
+  `2026_10_31_000003_add_teacher_class_management_permissions`.
+- Added `/api/system-users` for the admin/teacher account directory. The new
+  migration `2026_10_30_000003_create_role_module_permissions_table` must be run
+  before using Users/Roles or teacher module access controls.
+- Updated the Roles page with Admin and Teacher role selectors. Admin module
+  access is displayed as enabled and locked; Teacher module access remains
+  editable. Saving teacher permissions now reloads them from the API so the UI
+  confirms persisted values. Teacher access includes module-level and
+  feature-level controls, with related view permissions required by dependent
+  actions.
+- Redesigned the Roles & permissions page with role tabs, an admin/teacher role
+  summary, module search, and horizontal module rows. Each row places the module
+  details first, its access switch next, and the configured feature checkboxes
+  alongside it. Save actions stay compact at the top of the page. The existing
+  sidebar, route structure, permission dependencies, and save/reload flow are
+  unchanged.
 
 ### Demo login
 

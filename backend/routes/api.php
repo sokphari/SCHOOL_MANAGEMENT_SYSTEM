@@ -14,4 +14,7 @@ require __DIR__.'/api/grades.php';
 require __DIR__.'/api/timetable.php';
 require __DIR__.'/api/student-requests.php';
 require __DIR__.'/api/settings.php';
+require __DIR__.'/api/audit-logs.php';
+require __DIR__.'/api/users.php';
+require __DIR__.'/api/roles.php';
 require __DIR__.'/api/utilities.php';

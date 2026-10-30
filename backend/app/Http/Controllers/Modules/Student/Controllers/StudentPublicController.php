@@ -9,7 +9,7 @@ class StudentPublicController extends Controller
 {
     public function findByCode($student_code)
     {
-        $student = Student::with(['classes' => fn ($query) => $query->where('status', 'active')])
+        $student = Student::with(['classes' => fn ($query) => $query->where('school_classes.status', 'active')])
             ->where('student_code', $student_code)
             ->where('status', 'active')
             ->first();

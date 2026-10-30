@@ -59,14 +59,14 @@ export default function TeacherCreatePage() {
         </div>
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
-            <AppInput containerClassName={fieldClass} label="User ID (optional)" name="user_id" type="number" value={form.user_id} onChange={handleChange} error={errors.user_id?.[0]} />
-            <AppInput containerClassName={fieldClass} label="Teacher code" name="teacher_code" value={form.teacher_code} onChange={handleChange} placeholder="e.g. T001" error={errors.teacher_code?.[0]} />
-            <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} error={errors.first_name?.[0]} />
-            <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} error={errors.last_name?.[0]} />
+            <div className="min-w-0"><AppInput containerClassName={fieldClass} label="Linked teacher account ID (optional)" name="user_id" type="number" value={form.user_id} onChange={handleChange} placeholder="Existing teacher account ID" error={errors.user_id?.[0]} /><p className="mb-0 mt-1 text-[11px] text-muted">Only fill this in if the teacher login account already exists.</p></div>
+            <AppInput containerClassName={fieldClass} label="Teacher code" name="teacher_code" value={form.teacher_code} onChange={handleChange} placeholder="e.g. T001" error={errors.teacher_code?.[0]} required />
+            <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} placeholder="Enter first name" error={errors.first_name?.[0]} required />
+            <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} placeholder="Enter last name" error={errors.last_name?.[0]} required />
             <AppSelect containerClassName={fieldClass} label="Gender" name="gender" value={form.gender} onChange={handleChange} placeholder="Select gender" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} error={errors.gender?.[0]} />
             <AppInput containerClassName={fieldClass} label="Phone" name="phone" value={form.phone} onChange={handleChange} error={errors.phone?.[0]} />
             <AppInput containerClassName={fieldClass} label="Email" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email?.[0]} />
-            <AppInput containerClassName={`${fieldClass} sm:col-span-2 xl:col-span-4`} label="Address" name="address" value={form.address} onChange={handleChange} error={errors.address?.[0]} />
+            <AppInput containerClassName={`${fieldClass} sm:col-span-2 xl:col-span-3`} label="Address" name="address" value={form.address} onChange={handleChange} placeholder="Enter home address" error={errors.address?.[0]} />
           </FormSection>
           <FormSection title="Employment" description="Set the hire date and current teacher status.">
             <AppInput containerClassName={fieldClass} label="Hire date" name="hire_date" type="date" value={form.hire_date} onChange={handleChange} error={errors.hire_date?.[0]} />
@@ -83,5 +83,5 @@ export default function TeacherCreatePage() {
 }
 
 function FormSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <section><div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div><div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">{children}</div></section>;
+  return <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5"><div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div><div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div></section>;
 }

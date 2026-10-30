@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faCalendarCheck, faClock, faGraduationCap, faPenToSquare, faUserGraduate } from "@fortawesome/free-solid-svg-icons";
 import { getStudent, getStudentAttendance } from "@/modules/students/api/studentApi.ts";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import AppTable from "@/shared/components/AppTable.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
 import type { Student, StudentAttendanceRecord } from "@/modules/students/types/student";
@@ -25,6 +25,7 @@ export default function StudentDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const canViewAttendanceHistory = user?.role === "admin" || Boolean(user?.feature_permissions?.includes("students.view_attendance"));
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -36,6 +37,13 @@ export default function StudentDetailsPage() {
 
   useEffect(() => {
     let active = true;
+    if (!canViewAttendanceHistory) {
+      setAttendanceRecords([]);
+      setAttendancePagination({ current_page: 1, last_page: 1, total: 0 });
+      setAttendanceLoading(false);
+      setAttendanceError(false);
+      return () => { active = false; };
+    }
     if (!id) {
       setError(true);
       setLoading(false);
@@ -72,7 +80,7 @@ export default function StudentDetailsPage() {
       })
       .finally(() => { if (active) setAttendanceLoading(false); });
     return () => { active = false; };
-  }, [id, attendancePage]);
+  }, [canViewAttendanceHistory, id, attendancePage]);
 
   if (loading) return <div className="grid min-h-56 place-items-center text-sm text-secondary"><span className="flex items-center gap-2"><span className="size-4 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />Loading student profile…</span></div>;
   if (error || !student) return <section className="rounded-2xl border border-border bg-surface p-8 text-center shadow-card"><p className="m-0 font-semibold text-primary">Student not found</p><p className="mb-4 mt-1 text-sm text-secondary">This student profile could not be loaded.</p><button onClick={() => navigate("/admin/students")} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong">Back to students</button></section>;
@@ -127,7 +135,7 @@ export default function StudentDetailsPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+      {canViewAttendanceHistory && <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3.5 sm:px-5">
           <div><h2 className="m-0 text-base font-semibold text-primary">Attendance records</h2><p className="mb-0 mt-0.5 text-xs text-secondary">Attendance history for this student.</p></div>
           <span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand-strong">{attendancePagination.total} records</span>
@@ -141,7 +149,7 @@ export default function StudentDetailsPage() {
               <AppPagination currentPage={attendancePagination.current_page} lastPage={attendancePagination.last_page} onPageChange={setAttendancePage} showSinglePage />
             </div>
           </> : <div className="grid min-h-36 place-items-center px-4 text-center"><div><p className="m-0 text-sm font-semibold text-primary">No attendance records yet</p><p className="mb-0 mt-1 text-xs text-muted">Records will appear here after attendance is marked.</p></div></div>}
-      </section>
+      </section>}
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7">
         <div className="mb-5 flex items-center justify-between gap-3 border-b border-border pb-4"><div><h2 className="m-0 text-lg font-semibold text-primary">Courses and classes</h2><p className="mb-0 mt-1 text-sm text-secondary">Classes currently assigned to this student.</p></div><span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand-strong">{student.classes?.length || 0} total</span></div>

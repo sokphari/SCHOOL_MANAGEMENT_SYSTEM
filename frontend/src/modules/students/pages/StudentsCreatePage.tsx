@@ -57,14 +57,14 @@ export default function StudentCreatePage() {
 
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
-            <AppInput containerClassName={fieldClass} label="Student code" name="student_code" value={form.student_code} onChange={handleChange} placeholder="e.g. S001" error={errors.student_code?.[0]} />
-            <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} placeholder="Enter first name" error={errors.first_name?.[0]} />
-            <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} placeholder="Enter last name" error={errors.last_name?.[0]} />
+            <AppInput containerClassName={fieldClass} label="Student code" name="student_code" value={form.student_code} onChange={handleChange} placeholder="e.g. S001" error={errors.student_code?.[0]} required />
+            <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} placeholder="Enter first name" error={errors.first_name?.[0]} required />
+            <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} placeholder="Enter last name" error={errors.last_name?.[0]} required />
             <AppSelect containerClassName={fieldClass} label="Gender" name="gender" value={form.gender} onChange={handleChange} placeholder="Select gender" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} error={errors.gender?.[0]} />
             <AppInput containerClassName={fieldClass} label="Date of birth" name="date_of_birth" type="date" value={form.date_of_birth} onChange={handleChange} error={errors.date_of_birth?.[0]} />
             <AppInput containerClassName={fieldClass} label="Phone" name="phone" value={form.phone} onChange={handleChange} placeholder="Enter phone number" error={errors.phone?.[0]} />
             <AppInput containerClassName={fieldClass} label="Email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="Enter email address" error={errors.email?.[0]} />
-            <AppInput containerClassName={`${fieldClass} sm:col-span-2 xl:col-span-4`} label="Address" name="address" value={form.address} onChange={handleChange} placeholder="Enter home address" error={errors.address?.[0]} />
+            <AppInput containerClassName={`${fieldClass} sm:col-span-2 xl:col-span-3`} label="Address" name="address" value={form.address} onChange={handleChange} placeholder="Enter home address" error={errors.address?.[0]} />
           </FormSection>
 
           <FormSection title="Guardian information" description="Contact information for the student's guardian.">
@@ -89,9 +89,9 @@ export default function StudentCreatePage() {
 
 function FormSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <section>
-      <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div>
-      <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">{children}</div>
+    <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5">
+      <div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div>
+      <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );
 }

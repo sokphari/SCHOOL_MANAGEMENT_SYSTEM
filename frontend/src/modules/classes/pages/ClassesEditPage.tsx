@@ -7,6 +7,7 @@ import { getClass, updateClass } from "@/modules/classes/api/classApi.ts";
 import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
 import { getBuildings } from "@/modules/locations/api/locationApi.ts";
 import { getCourses } from "@/modules/courses/api/courseApi.ts";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { ClassForm, ClassPayload, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
@@ -18,6 +19,7 @@ const fieldClass = "mb-0";
 export default function ClassEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState<ClassForm | null>(null);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [buildings, setBuildings] = useState<BuildingLocation[]>([]);
@@ -32,10 +34,15 @@ export default function ClassEditPage() {
     const fetchData = async () => {
       try {
         if (!id) throw new Error("Missing class id");
-        const [classResponse, teacherResponse, buildingResponse, courseResponse] = await Promise.all([getClass(id), getTeachers(), getBuildings(), getCourses()]);
+        const [classResponse, teacherResponse, buildingResponse, courseResponse] = await Promise.all([
+          getClass(id),
+          user?.role === "admin" ? getTeachers() : Promise.resolve(null),
+          getBuildings(),
+          getCourses(),
+        ]);
         if (!active) return;
         const data = classResponse.data;
-        setTeachers((teacherResponse.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
+        setTeachers((teacherResponse?.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
         setBuildings(buildingResponse.data || []);
         const courseList = courseResponse.data || [];
         setCourses(courseList);
@@ -68,7 +75,7 @@ export default function ClassEditPage() {
     };
     fetchData();
     return () => { active = false; };
-  }, [id]);
+  }, [id, user?.role]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.currentTarget;
@@ -138,7 +145,7 @@ export default function ClassEditPage() {
           <section>
             <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-base font-semibold text-primary">Teaching details</h2><p className="mb-0 mt-1 text-xs text-secondary">Assign a teacher, update status, and edit the description.</p></div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
-              <AppSelect containerClassName={fieldClass} label="Teacher (optional)" name="teacher_id" value={form.teacher_id} onChange={handleChange} placeholder="Unassigned" options={teachers} error={errors.teacher_id?.[0]} />
+              {user?.role === "admin" && <AppSelect containerClassName={fieldClass} label="Teacher (optional)" name="teacher_id" value={form.teacher_id} onChange={handleChange} placeholder="Unassigned" options={teachers} error={errors.teacher_id?.[0]} />}
               <div className="min-w-0 sm:col-span-2 xl:col-span-4">
                 <label htmlFor="description" className="mb-1.5 block text-[13px] font-semibold text-secondary">Description (optional)</label>
                 <textarea id="description" name="description" rows={2} value={form.description} onChange={handleChange} placeholder="Add class details" aria-invalid={Boolean(errors.description?.[0])} className={`w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15 ${errors.description?.[0] ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`} />

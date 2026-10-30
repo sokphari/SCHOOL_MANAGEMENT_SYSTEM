@@ -7,7 +7,7 @@ import AppTable from "@/shared/components/AppTable.tsx";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
-import { useAuth } from "@/modules/auth/context/AuthContext";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 import StudentQrCard from "@/modules/students/components/StudentQrCard.tsx";
 import AppModal from "@/shared/components/AppModal.tsx";
 import type { Student, StudentFilters } from "@/modules/students/types/student";

@@ -33,6 +33,9 @@ import GradeTermCreatePage from "@/modules/grades/pages/GradeTermCreatePage.tsx"
 import GradeTermPage from "@/modules/grades/pages/GradeTermPage.tsx";
 import TimetablePage from "@/modules/timetable/pages/TimetablePage.tsx";
 import TimetableFormPage from "@/modules/timetable/pages/TimetableFormPage.tsx";
+import AuditLogsPage from "@/modules/audit-logs/pages/AuditLogsPage.tsx";
+import SystemUsersPage from "@/modules/audit-logs/pages/SystemUsersPage.tsx";
+import RolePermissionsPage from "@/modules/audit-logs/pages/RolePermissionsPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -62,7 +65,11 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <DashboardPage />,
+        element: (
+          <RoleRoute roles={["admin", "teacher"]} feature="dashboard.view">
+            <DashboardPage />
+          </RoleRoute>
+        ),
       },
 
       {
@@ -93,7 +100,7 @@ const router = createBrowserRouter([
       {
         path: "students",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="students.view_list">
             <StudentsPage />
           </RoleRoute>
         ),
@@ -117,7 +124,7 @@ const router = createBrowserRouter([
       {
         path: "students/:id",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="students.view_details">
             <StudentDetailsPage />
           </RoleRoute>
         ),
@@ -126,7 +133,7 @@ const router = createBrowserRouter([
       {
         path: "classes",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="classes.view_list">
             <ClassesPage />
           </RoleRoute>
         ),
@@ -152,7 +159,7 @@ const router = createBrowserRouter([
       {
         path: "classes/create",
         element: (
-          <RoleRoute roles={["admin"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="classes.create">
             <ClassCreatePage />
           </RoleRoute>
         ),
@@ -160,7 +167,7 @@ const router = createBrowserRouter([
       {
         path: "classes/:id/edit",
         element: (
-          <RoleRoute roles={["admin"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="classes.edit">
             <ClassEditPage />
           </RoleRoute>
         ),
@@ -168,7 +175,7 @@ const router = createBrowserRouter([
       {
         path: "classes/:id",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="classes.view_details">
             <ClassDetailPage />
           </RoleRoute>
         ),
@@ -177,7 +184,7 @@ const router = createBrowserRouter([
       {
         path: "attendance",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="attendance.view">
             <AttendancePage />
           </RoleRoute>
         ),
@@ -186,7 +193,7 @@ const router = createBrowserRouter([
       {
         path: "grades",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="grades.view_terms">
             <GradesPage />
           </RoleRoute>
         ),
@@ -202,7 +209,7 @@ const router = createBrowserRouter([
       {
         path: "grades/terms/:termId",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="grades.view_terms">
             <GradeTermPage />
           </RoleRoute>
         ),
@@ -210,7 +217,7 @@ const router = createBrowserRouter([
       {
         path: "timetable",
         element: (
-          <RoleRoute roles={["admin", "teacher"]}>
+          <RoleRoute roles={["admin", "teacher"]} feature="timetable.view">
             <TimetablePage />
           </RoleRoute>
         ),
@@ -253,6 +260,30 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin"]}>
             <SettingsPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "audit-logs",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <AuditLogsPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "audit-logs/users",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <SystemUsersPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "audit-logs/roles",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <RolePermissionsPage />
           </RoleRoute>
         ),
       },

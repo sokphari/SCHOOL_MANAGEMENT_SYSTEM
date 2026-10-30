@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnforceSessionLifetime
@@ -18,7 +17,7 @@ class EnforceSessionLifetime
             return $next($request);
         }
 
-        if ($user->currentAccessToken() instanceof PersonalAccessToken) {
+        if ($request->bearerToken()) {
             return response()->json(['message' => 'Bearer tokens are not accepted for this browser application.'], 401);
         }
 
