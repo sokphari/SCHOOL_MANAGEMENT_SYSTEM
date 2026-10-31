@@ -9,6 +9,7 @@ import {
   faInbox,
   faRightFromBracket,
   faShieldHalved,
+  faTrashCan,
   faUserPlus,
   faVolumeHigh,
   faVolumeXmark,
@@ -17,6 +18,7 @@ import {
 import { getAuditLogs } from "@/modules/audit-logs/api/auditLogsApi";
 import { getStudentRequests } from "@/modules/student-requests/api/studentRequestsApi.ts";
 import { getStudentRegistrations } from "@/modules/students/api/studentRegistrationApi";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 function todayDate() {
   const now = new Date();
@@ -46,12 +48,21 @@ function presentActivity(event) {
 }
 
 export default function NotificationBell() {
+  const { user } = useAuth();
+  const dismissedStorageKey = `admin-notification-history-${user?.id ?? "current"}`;
   const [pendingRequests, setPendingRequests] = useState([]);
   const [pendingRegistrations, setPendingRegistrations] = useState([]);
   const [activityEvents, setActivityEvents] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("admin-registration-alert-sound") === "enabled");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dismissedIds, setDismissedIds] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(dismissedStorageKey) || "[]"));
+    } catch {
+      return new Set();
+    }
+  });
   const panelRef = useRef(null);
   const seenRegistrationIds = useRef(new Set());
   const initializedRegistrations = useRef(false);
@@ -97,8 +108,8 @@ export default function NotificationBell() {
   const fetchNotifications = useCallback(async () => {
     const today = todayDate();
     const [requestsResult, registrationsResult, authResult, securityResult] = await Promise.allSettled([
-      getStudentRequests({ status: "pending", page: 1 }),
-      getStudentRegistrations({ status: "pending", page: 1 }),
+      getStudentRequests({ status: "pending", page: 1 }, { notificationPoll: true }),
+      getStudentRegistrations({ status: "pending", page: 1 }, { notificationPoll: true }),
       getAuditLogs({ module: "auth", date_from: today, date_to: today, page: 1 }),
       getAuditLogs({ module: "security", date_from: today, date_to: today, page: 1 }),
     ]);
@@ -170,7 +181,15 @@ export default function NotificationBell() {
   ]
     .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
     .slice(0, 20);
-  const count = notifications.length;
+  const visibleNotifications = notifications.filter((notification) => !dismissedIds.has(notification.id));
+  const count = visibleNotifications.length;
+
+  const clearHistory = () => {
+    const nextDismissed = new Set([...dismissedIds, ...notifications.map((notification) => notification.id)]);
+    const storedIds = [...nextDismissed].slice(-500);
+    setDismissedIds(new Set(storedIds));
+    localStorage.setItem(dismissedStorageKey, JSON.stringify(storedIds));
+  };
 
   const navigateToRequests = () => {
     setOpen(false);
@@ -219,7 +238,7 @@ export default function NotificationBell() {
               <div className="px-4 py-9 text-center"><FontAwesomeIcon icon={faInbox} className="mb-2 text-xl text-muted" /><p className="m-0 text-sm font-semibold">You’re all caught up</p><p className="mb-0 mt-1 text-xs text-muted">No student registrations, requests, or account/security events today.</p></div>
             ) : (
               <div className="divide-y divide-border">
-                {notifications.map((notification) => {
+                {visibleNotifications.map((notification) => {
                   if (notification.type === "registration") {
                     const { registration } = notification;
                     return (
@@ -272,11 +291,12 @@ export default function NotificationBell() {
             )}
           </div>
 
-          {(pendingRegistrations.length > 0 || pendingRequests.length > 0 || activityEvents.length > 0) && (
-            <footer className="flex gap-2 border-t border-border px-3 py-2.5">
-              {pendingRegistrations.length > 0 && <button type="button" onClick={navigateToRegistrations} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View registrations</button>}
-              {pendingRequests.length > 0 && <button type="button" onClick={navigateToRequests} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View all requests</button>}
-              {activityEvents.length > 0 && <button type="button" onClick={navigateToAudit} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View audit log</button>}
+          {notifications.length > 0 && (
+            <footer className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2.5">
+              {visibleNotifications.some((notification) => notification.type === "registration") && <button type="button" onClick={navigateToRegistrations} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View registrations</button>}
+              {visibleNotifications.some((notification) => notification.type === "request") && <button type="button" onClick={navigateToRequests} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View all requests</button>}
+              {visibleNotifications.some((notification) => notification.type === "activity") && <button type="button" onClick={navigateToAudit} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View audit log</button>}
+              {visibleNotifications.length > 0 && <button type="button" onClick={clearHistory} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-secondary transition hover:bg-rose-500/10 hover:text-rose-600"><FontAwesomeIcon icon={faTrashCan} /> Clear history</button>}
             </footer>
           )}
         </section>

@@ -8,8 +8,6 @@ import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import StudentQrCard from "@/modules/students/components/StudentQrCard.tsx";
-import AppModal from "@/shared/components/AppModal.tsx";
 import type { Student, StudentFilters } from "@/modules/students/types/student";
 
 interface PaginationState {
@@ -29,8 +27,6 @@ const PAGE_SIZE = 15;
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [qrOpen, setQrOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationState>({ current_page: 1, last_page: 1, total: 0 });
   const [filters, setFilters] = useState<StudentFilters>({ search: "", status: "", gender: "", page: 1 });
   const navigate = useNavigate();
@@ -105,7 +101,6 @@ export default function StudentsPage() {
       key: "actions", title: "Actions", render: (row) => (
         <div className="flex items-center gap-1.5">
           <button onClick={() => navigate(`/admin/students/${row.id}`)} className="grid size-8 place-items-center rounded-lg border border-border text-secondary transition hover:border-brand/40 hover:bg-brand-soft hover:text-brand-strong" title="View student" aria-label={`View ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faEye} /></button>
-          <button onClick={() => { setSelectedStudent(row); setQrOpen(true); }} className="grid size-8 place-items-center rounded-lg border border-border text-secondary transition hover:border-brand/40 hover:bg-brand-soft hover:text-brand-strong" title="View QR code" aria-label={`Show QR code for ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faQrcode} /></button>
           {user?.role === "admin" && <>
             <button onClick={() => navigate(`/admin/students/${row.id}/edit`)} className="grid size-8 place-items-center rounded-lg border border-border text-secondary transition hover:border-brand/40 hover:bg-brand-soft hover:text-brand-strong" title="Edit student" aria-label={`Edit ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faPenToSquare} /></button>
             <button onClick={() => handleDelete(row.id)} className="grid size-8 place-items-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40" title="Delete student" aria-label={`Delete ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faTrash} /></button>
@@ -148,10 +143,6 @@ export default function StudentsPage() {
             </div>
           </> : <div className="grid min-h-56 place-items-center px-4 text-center"><div><span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-brand-soft text-xl text-brand">⌕</span><p className="m-0 font-semibold text-primary">No students found</p><p className="mb-0 mt-1 text-sm text-muted">Try changing your filters or search terms.</p></div></div>}
       </section>
-
-      <AppModal open={qrOpen} onClose={() => setQrOpen(false)}>
-        {selectedStudent && <StudentQrCard student={selectedStudent} onClose={() => setQrOpen(false)} />}
-      </AppModal>
     </div>
   );
 }

@@ -334,6 +334,10 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
   }, [menuOpen]);
 
   const ended = isClassEnded(classItem) || Boolean(classItem.pre_end_at);
+  const courseName = classItem.course_record?.name || classItem.course || classItem.name;
+  const teacherName = classItem.teacher
+    ? `${classItem.teacher.first_name} ${classItem.teacher.last_name}`.trim() || `Teacher ${classItem.teacher.id}`
+    : "Unassigned";
   const hasAvailableActions = permissions.addStudents || permissions.switchTeacher || permissions.edit
     || permissions.scheduleEnd || permissions.preEnd || permissions.resume;
 
@@ -341,7 +345,7 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
     <article className="flex h-full flex-col rounded-xl border border-border bg-surface-raised p-4 transition hover:border-brand/30 hover:shadow-card">
       <div className="mb-3 flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faBookOpen} /></span>
-        <div className="min-w-0 flex-1"><h2 className="m-0 truncate text-base font-semibold text-primary"><TagBadge tone="purple">{classItem.name}</TagBadge></h2><p className="mb-0 mt-1 text-xs text-secondary">Class ID: <span className="font-semibold text-brand">{classItem.id}</span></p></div>
+        <div className="min-w-0 flex-1"><h2 className="m-0 truncate text-base font-semibold text-primary" title={courseName}><TagBadge tone="purple">{courseName}</TagBadge></h2><p className="mb-0 mt-1 truncate text-xs text-secondary"> ID: <span className="font-semibold text-brand">{classItem.id}</span></p></div>
         <div className="relative flex shrink-0 items-center gap-1.5" ref={menuRef}>
           <StatusBadge classItem={classItem} />
           {hasAvailableActions && <button type="button" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={`More actions for ${classItem.name}`} title="More actions" onClick={() => setMenuOpen((open) => !open)} className="grid size-8 place-items-center rounded-lg border border-transparent text-muted transition hover:border-border hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faEllipsisVertical} /></button>}
@@ -356,7 +360,6 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
         </div>
       </div>
       <dl className="mb-4 grid grid-cols-1 gap-0.5 text-sm">
-        <InfoRow label="Course" value={classItem.course_record?.name || classItem.course || classItem.name} />
         <InfoRow label="Lesson" value={classItem.lesson_record?.name || classItem.lesson || "General studies"} />
         <InfoRow label="Class type" value={<TagBadge tone={classItem.delivery_mode === "online" ? "blue" : classItem.delivery_mode === "hybrid" ? "purple" : "emerald"}>{classItem.delivery_mode || "Physical"}</TagBadge>} />
         <InfoRow label="Academic year" value={classItem.academic_year || "—"} />
@@ -366,7 +369,7 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
         <InfoRow label="Floor" value={classItem.floorLocation?.name || classItem.floor || "—"} />
         <InfoRow label="Term" value={classItem.term || "Term 1"} />
         <InfoRow label="Time" value={classItem.time || "08:00 AM – 09:00 AM"} />
-        <InfoRow label="Teacher" value={classItem.teacher ? <TagBadge tone="blue"><FontAwesomeIcon icon={faChalkboardUser} />{classItem.teacher.first_name} {classItem.teacher.last_name}</TagBadge> : "Unassigned"} />
+        <InfoRow label="Teacher" value={classItem.teacher ? <TagBadge tone="blue"><FontAwesomeIcon icon={faChalkboardUser} />{teacherName}</TagBadge> : "Unassigned"} />
         {classItem.end_date && <InfoRow label="End date" value={formatClassDate(classItem.end_date)} />}
       </dl>
       <div className="mt-auto flex items-center gap-2 border-t border-border pt-3">

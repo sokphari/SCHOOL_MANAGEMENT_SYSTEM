@@ -6,8 +6,13 @@ import type {
   UpdateStudentRequestPayload,
 } from "@/modules/student-requests/types/studentRequest";
 
-export const getStudentRequests = (params: StudentRequestFilters = {}) =>
-  api.get<PaginatedStudentRequests>("/student-requests", { params });
+export const getStudentRequests = (
+  params: StudentRequestFilters = {},
+  options: { notificationPoll?: boolean } = {},
+) => api.get<PaginatedStudentRequests>("/student-requests", {
+  params,
+  headers: options.notificationPoll ? { "X-Notification-Poll": "true" } : undefined,
+});
 
 export const getStudentRequest = (id: string | number) =>
   api.get<StudentRequest>(`/student-requests/${id}`);

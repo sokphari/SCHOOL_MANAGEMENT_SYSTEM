@@ -19,6 +19,10 @@ export interface AuditLogRecord {
   status_code: number;
   ip_address: string | null;
   created_at: string;
+  metadata: {
+    changes?: Record<string, { before: unknown; after: unknown }>;
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface AuditLogFilters {
@@ -47,8 +51,11 @@ export interface SystemUser {
   name: string;
   email: string;
   role: "admin" | "teacher";
+  is_active: boolean;
   last_activity_at: string | null;
 }
+
+export type SystemUserAccount = Pick<SystemUser, "id" | "name" | "email" | "role" | "is_active">;
 
 export interface PaginatedSystemUsers {
   data: SystemUser[];
@@ -79,6 +86,22 @@ export function getAuditLogs(filters: AuditLogFilters = {}) {
 
 export function getSystemUsers(params: { search?: string; role?: string; page?: number } = {}) {
   return api.get<PaginatedSystemUsers>("/system-users", { params });
+}
+
+export function getSystemUser(id: number | string) {
+  return api.get<SystemUserAccount>(`/system-users/${id}`);
+}
+
+export function updateSystemUser(id: number | string, data: { name: string; email: string }) {
+  return api.put<{ message: string; user: SystemUserAccount }>(`/system-users/${id}`, data);
+}
+
+export function setSystemUserActive(id: number | string, isActive: boolean) {
+  return api.patch<{ message: string; user: SystemUserAccount }>(`/system-users/${id}/status`, { is_active: isActive });
+}
+
+export function deleteSystemUser(id: number | string) {
+  return api.delete<{ message: string }>(`/system-users/${id}`);
 }
 
 export function getTeacherModulePermissions() {

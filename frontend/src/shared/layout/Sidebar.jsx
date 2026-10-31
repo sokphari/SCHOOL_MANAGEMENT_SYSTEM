@@ -114,7 +114,7 @@ export default function Sidebar({ isOpen, onNavigate }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto pb-3" aria-label="Main navigation">
+      <nav className="sidebar-scrollbar flex-1 space-y-5 overflow-y-auto pb-3" aria-label="Main navigation">
         {sections.map((section) => (
           <section key={section} aria-label={section}>
             <p className="mb-2 ml-2 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-sidebar-muted">{section}</p>

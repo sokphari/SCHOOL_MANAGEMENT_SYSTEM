@@ -612,6 +612,21 @@ repeating discovery work.
 - Failed audit writes are logged without interrupting the user action. Apply
   the new migration with `php artisan migrate` before expecting the audit list
   or login/logout audit events to persist.
+- Audit rows now provide a details view with the event actor, request, result,
+  IP address, and a field-by-field before/after comparison when available.
+  Change snapshots use model-specific allowlists; credentials and request bodies
+  are not stored. Sign-ins and older events can show no field diff.
+- Successful normal GET page/data views are no longer added to the audit log;
+  state-changing mutations and security/failure events remain recorded. Existing
+  page-view rows are retained as historical records.
+- The audit table's User column displays only the actor role badge, without the
+  redundant account display name. Admin, Teacher, and System use distinct
+  higher-contrast badge colors in light and dark themes.
+- The Users & Account page now supports full-page account editing (name/email),
+  blocking/unblocking, and deletion. Account status is enforced at login and on
+  subsequent authenticated API requests. Self-blocking/deletion and removal of
+  the last active admin are prevented. Run `php artisan migrate` to add the
+  `users.is_active` field before using the new account controls.
 - Verification for this change: PHP syntax, Pint on changed PHP files, API
   route discovery, frontend lint, TypeScript checking, and production build
   passed. Local PHP feature tests could not connect to SQLite because the local
@@ -633,6 +648,17 @@ repeating discovery work.
   three-column desktop field layouts, larger field spacing, and visible required
   markers. Required inputs/selects use native browser validation. Teacher account
   ID now explains that it is for an already-existing teacher login account.
+- Updated the sidebar navigation scrollbar to a slim rounded violet thumb with
+  a low-contrast track and a brighter hover state. Styling supports Firefox and
+  Chromium-based browsers without changing the sidebar's scrolling behavior.
+- Audit event details now use color-coded badges for the module, action type,
+  actor role, result status, request method, and record type. The field-change
+  section shows each changed field in paired Before and After value cards and
+  includes a count of changed fields.
+- Failed mutation audit entries now keep the attempted operation in the action
+  label (for example, `students.delete_failed`). Existing generic failure rows
+  are displayed using their HTTP method, so older DELETE failures read `delete
+  failed` instead of the ambiguous `action failed`.
 - The admin notification bell now opens an in-place dropdown with pending
   student requests, successful/failed logins, logouts, blocked API access, and
   rate-limited API attempts from today. Navigation happens only when an admin
@@ -713,4 +739,10 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
 - New API routes: `POST /api/student-registrations/qr-tokens` (admin issue), `GET /api/public/student-registrations/qr-status`, `POST /api/public/student-registrations`, `GET /api/student-registrations`, and admin `POST /api/student-registrations/{id}/approve|reject`.
 - Applied `2026_10_31_000004_create_student_registrations_table` and `2026_10_31_000005_create_student_registration_tokens_table` to the local Docker database. For another environment, run `cd backend && php artisan migrate`. No dependency was added.
 - Verification: frontend `npm run typecheck`, `npm run lint`, and `npm run build`; PHP syntax checks, Laravel route discovery, Pint formatting, and `git diff --check` pass. No feature tests were run. Existing large-bundle warning remains on the production build.
-- Admin notification bell now includes pending student registrations and routes View actions to the registration review page. It refreshes automatically every 10 seconds and immediately when the browser tab regains focus; this is near-real-time polling and does not require a page reload. Sound is off by default and can be enabled in the notification panel; enabled sound plays one brief chime when newly detected registration IDs arrive, not on every poll. The preference is stored in localStorage. No broadcasting/WebSocket service was added.
+- Admin notification bell now includes pending student registrations and routes View actions to the registration review page. It refreshes automatically every 10 seconds and immediately when the browser tab regains focus; this is near-real-time polling and does not require a page reload. Sound is off by default and can be enabled in the notification panel; enabled sound plays one brief chime when newly detected registration IDs arrive, not on every poll. The sound preference and dismissed notification history are stored in localStorage per admin user. “Clear history” only dismisses notification entries from this browser; it does not delete applications, requests, or audit logs. No broadcasting/WebSocket service was added.
+- Restyled `StudentQrCard` as a reusable QR dialog: it supports both current-student request QR codes and one-time registration QR codes, with copy and print actions. The QR registrations page now uses the screenshot-inspired full-width application list; admins generate registration QR codes from the page header and view/share them in the dialog.
+- Registration approve/reject actions use consistent semantic button sizes, keyboard focus rings, and action-specific pending labels. Both actions are disabled while one is in progress for that application.
+- Removed per-student QR buttons from the Students table actions. The page-level Registration QR action remains available for admin-issued enrollment codes.
+- Expanded audit logging to record successful authenticated admin/teacher GET page-data views as `<module>.viewed`, successful mutations, failed authenticated mutations as `<module>.action_failed`, plus existing login/security events. Audit-log reads, `/api/me`, public reads, and the notification bell's explicitly marked background polls are excluded to prevent noisy self-logging; normal user visits to student request/registration lists are still recorded. The Audit Log page now filters by Admin or Teacher role and explains the captured event types. No request bodies, passwords, or tokens are recorded.
+- Audit Log filters default to the Today preset while the two calendar inputs remain blank. Presets include Today, Yesterday, This week (Monday through today), Custom range, and All time. Calendar values are only used for the Custom range preset.
+- Class cards now display the course name in the top badge; class name and ID remain in the subtitle. Removed the duplicate Course detail row, and the Class teacher row shows the assigned teacher's full name.

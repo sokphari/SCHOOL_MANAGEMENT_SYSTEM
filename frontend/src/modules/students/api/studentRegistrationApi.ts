@@ -23,7 +23,10 @@ export const getStudentRegistrations = (params: {
   page?: number;
   search?: string;
   status?: string;
-}) => api.get<StudentRegistrationPage>("/student-registrations", { params });
+}, options: { notificationPoll?: boolean } = {}) => api.get<StudentRegistrationPage>("/student-registrations", {
+  params,
+  headers: options.notificationPoll ? { "X-Notification-Poll": "true" } : undefined,
+});
 
 export const issueStudentRegistrationQr = () =>
   api.post<{ message: string; data: { token: string; expires_at: string } }>("/student-registrations/qr-tokens");

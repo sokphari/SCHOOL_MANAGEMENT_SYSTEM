@@ -17,6 +17,14 @@ class EnforceSessionLifetime
             return $next($request);
         }
 
+        if (! $user->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json(['message' => 'This account has been blocked. Contact an administrator.'], 401);
+        }
+
         if ($request->bearerToken()) {
             return response()->json(['message' => 'Bearer tokens are not accepted for this browser application.'], 401);
         }

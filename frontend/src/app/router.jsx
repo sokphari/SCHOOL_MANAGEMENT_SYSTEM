@@ -35,6 +35,7 @@ import TimetablePage from "@/modules/timetable/pages/TimetablePage.tsx";
 import TimetableFormPage from "@/modules/timetable/pages/TimetableFormPage.tsx";
 import AuditLogsPage from "@/modules/audit-logs/pages/AuditLogsPage.tsx";
 import SystemUsersPage from "@/modules/audit-logs/pages/SystemUsersPage.tsx";
+import SystemUserEditPage from "@/modules/audit-logs/pages/SystemUserEditPage.tsx";
 import RolePermissionsPage from "@/modules/audit-logs/pages/RolePermissionsPage.tsx";
 import StudentRegistrationPage from "@/modules/public/pages/StudentRegistrationPage.tsx";
 import StudentRegistrationsPage from "@/modules/students/pages/StudentRegistrationsPage.tsx";
@@ -290,6 +291,14 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin"]}>
             <SystemUsersPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "audit-logs/users/:id/edit",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <SystemUserEditPage />
           </RoleRoute>
         ),
       },

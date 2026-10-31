@@ -63,6 +63,36 @@
   --shadow-card: var(--card-shadow);
 }
 
+@layer components {
+  .sidebar-scrollbar {
+    scrollbar-color: rgb(167 139 250 / 65%) rgb(255 255 255 / 4%);
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgb(255 255 255 / 4%);
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    min-height: 36px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgb(167 139 250 / 62%);
+    background-clip: padding-box;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgb(196 181 253 / 88%);
+    background-clip: padding-box;
+  }
+}
+
 @layer base {
   * {
     box-sizing: border-box;

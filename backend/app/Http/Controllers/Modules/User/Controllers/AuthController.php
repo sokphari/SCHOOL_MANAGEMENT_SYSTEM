@@ -22,7 +22,7 @@ class AuthController extends Controller
 
         $user = User::where('email', mb_strtolower(trim($credentials['email'])))->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password) || ! in_array($user->role, ['admin', 'teacher'], true)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password) || ! in_array($user->role, ['admin', 'teacher'], true) || ! $user->is_active) {
             $auditLogService->record($request, 'auth.login.failed', 'auth', statusCode: 401);
 
             return response()->json([
