@@ -7,7 +7,7 @@ export interface TimetableClass {
   building?: string | null;
   building_location?: { id: number; name: string; code: string | null } | null;
   buildingLocation?: { id: number; name: string; code: string | null } | null;
-  teacher?: { first_name: string; last_name: string } | null;
+  teacher?: { id: number; first_name: string; last_name: string } | null;
   course?: string | null;
   lesson?: string | null;
   course_record?: { name: string } | null;

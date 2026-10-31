@@ -785,3 +785,15 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
 - Fixed the CORS allowlist to permit the notification poll's custom
   `X-Notification-Poll` header. Without it, cross-origin browser preflight
   requests can block notification data, including pending teacher signups.
+- The teacher timetable view continues to use the backend's assigned-class
+  scope and now summarizes own sessions, scheduled weekdays, and available
+  weekdays. Empty teacher days are clearly marked Available; days with saved
+  sessions are marked Scheduled. Availability means no saved sessions, since
+  the system has no configured school-day hours or time-slot grid.
+- Reworked the weekly timetable from weekday columns full of mixed teacher cards
+  into one row per teacher and weekday columns. Admins can compare teacher
+  schedules in one view; a signed-in teacher gets one row for their own complete
+  timetable. Search by teacher name shows that teacher's whole row.
+- Added explicit availability labels to the timetable: empty teacher/day cells
+  show Available, and each session card shows Unavailable for its scheduled
+  interval (not the full day).
