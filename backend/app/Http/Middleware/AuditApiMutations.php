@@ -63,6 +63,10 @@ class AuditApiMutations
             return false;
         }
 
+        if ($request->header('X-Notification-Poll') === 'true') {
+            return false;
+        }
+
         return true;
     }
 }

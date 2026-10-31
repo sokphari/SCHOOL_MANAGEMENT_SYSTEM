@@ -18,6 +18,7 @@ import {
 import { getAuditLogs } from "@/modules/audit-logs/api/auditLogsApi";
 import { getStudentRequests } from "@/modules/student-requests/api/studentRequestsApi.ts";
 import { getStudentRegistrations } from "@/modules/students/api/studentRegistrationApi";
+import { getPendingStaffRegistrations } from "@/modules/audit-logs/api/staffRegistrationsApi";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 function todayDate() {
@@ -52,6 +53,7 @@ export default function NotificationBell() {
   const dismissedStorageKey = `admin-notification-history-${user?.id ?? "current"}`;
   const [pendingRequests, setPendingRequests] = useState([]);
   const [pendingRegistrations, setPendingRegistrations] = useState([]);
+  const [pendingStaffRegistrations, setPendingStaffRegistrations] = useState([]);
   const [activityEvents, setActivityEvents] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("admin-registration-alert-sound") === "enabled");
   const [open, setOpen] = useState(false);
@@ -64,31 +66,58 @@ export default function NotificationBell() {
     }
   });
   const panelRef = useRef(null);
-  const seenRegistrationIds = useRef(new Set());
-  const initializedRegistrations = useRef(false);
+  const seenNotificationIds = useRef(new Set());
+  const initializedNotificationKinds = useRef(new Set());
   const soundEnabledRef = useRef(soundEnabled);
   const audioContextRef = useRef(null);
   const navigate = useNavigate();
 
-  const playRegistrationChime = useCallback(() => {
-    const context = audioContextRef.current;
-    if (!context || context.state !== "running") return;
-    const now = context.currentTime;
-    [784, 988].forEach((frequency, index) => {
-      const start = now + index * 0.14;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, start);
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.linearRampToValueAtTime(0.055, start + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(start);
-      oscillator.stop(start + 0.21);
-    });
+  const unlockAudio = useCallback(async () => {
+    if (!soundEnabledRef.current) return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!audioContextRef.current && AudioContextClass) audioContextRef.current = new AudioContextClass();
+      if (audioContextRef.current?.state === "suspended") await audioContextRef.current.resume();
+    } catch {
+      // Browser audio can be unavailable or blocked; visual notifications still work.
+    }
   }, []);
+
+  const playNotificationChime = useCallback(async () => {
+    try {
+      await unlockAudio();
+      const context = audioContextRef.current;
+      if (!context) return;
+      if (context.state !== "running") return;
+      const now = context.currentTime;
+      [784, 988].forEach((frequency, index) => {
+        const start = now + index * 0.14;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.linearRampToValueAtTime(0.14, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + 0.21);
+      });
+    } catch {
+      // Browser audio can be unavailable or blocked; visual notifications still work.
+    }
+  }, [unlockAudio]);
+
+  useEffect(() => {
+    const unlockOnInteraction = () => void unlockAudio();
+    window.addEventListener("pointerdown", unlockOnInteraction, { once: true });
+    window.addEventListener("keydown", unlockOnInteraction, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlockOnInteraction);
+      window.removeEventListener("keydown", unlockOnInteraction);
+    };
+  }, [unlockAudio]);
 
   const toggleSound = async () => {
     const next = !soundEnabledRef.current;
@@ -96,47 +125,61 @@ export default function NotificationBell() {
     setSoundEnabled(next);
     localStorage.setItem("admin-registration-alert-sound", next ? "enabled" : "disabled");
     if (!next) return;
-    try {
-      const AudioContextClass = window.AudioContext;
-      if (!audioContextRef.current && AudioContextClass) audioContextRef.current = new AudioContextClass();
-      if (audioContextRef.current?.state === "suspended") await audioContextRef.current.resume();
-    } catch {
-      // Audio is optional; the visual notification remains available.
-    }
+    // This button click is a user gesture, so use it to unlock audio and preview
+    // the sound. It also makes the sound setting verifiable without waiting for
+    // another registration to arrive.
+    await playNotificationChime();
   };
 
   const fetchNotifications = useCallback(async () => {
     const today = todayDate();
-    const [requestsResult, registrationsResult, authResult, securityResult] = await Promise.allSettled([
+    const [requestsResult, registrationsResult, staffRegistrationsResult, authResult, securityResult] = await Promise.allSettled([
       getStudentRequests({ status: "pending", page: 1 }, { notificationPoll: true }),
       getStudentRegistrations({ status: "pending", page: 1 }, { notificationPoll: true }),
+      user?.role === "admin" ? getPendingStaffRegistrations(true) : Promise.resolve(null),
       getAuditLogs({ module: "auth", date_from: today, date_to: today, page: 1 }),
       getAuditLogs({ module: "security", date_from: today, date_to: today, page: 1 }),
     ]);
 
+    let hasNewNotifications = false;
+    const recordNewNotifications = (kind, items, prefix) => {
+      const ids = items.map((item) => `${prefix}-${item.id}`);
+      if (initializedNotificationKinds.current.has(kind) && ids.some((id) => !seenNotificationIds.current.has(id))) {
+        hasNewNotifications = true;
+      }
+      ids.forEach((id) => seenNotificationIds.current.add(id));
+      initializedNotificationKinds.current.add(kind);
+    };
+
     if (requestsResult.status === "fulfilled") {
-      setPendingRequests(requestsResult.value.data.data ?? []);
+      const requests = requestsResult.value.data.data ?? [];
+      recordNewNotifications("requests", requests, "request");
+      setPendingRequests(requests);
     }
     if (registrationsResult.status === "fulfilled") {
       const registrations = registrationsResult.value.data.data ?? [];
-      const newRegistrations = registrations.filter((registration) => !seenRegistrationIds.current.has(registration.id));
-      if (initializedRegistrations.current && soundEnabledRef.current && newRegistrations.length > 0) {
-        playRegistrationChime();
-      }
-      registrations.forEach((registration) => seenRegistrationIds.current.add(registration.id));
-      initializedRegistrations.current = true;
+      recordNewNotifications("registrations", registrations, "registration");
       setPendingRegistrations(registrations);
+    }
+    if (staffRegistrationsResult.status === "fulfilled" && staffRegistrationsResult.value) {
+      const registrations = staffRegistrationsResult.value.data.data ?? [];
+      recordNewNotifications("staff-registrations", registrations, "staff-registration");
+      setPendingStaffRegistrations(registrations);
     }
 
     const authEvents = authResult.status === "fulfilled" ? authResult.value.data.data ?? [] : [];
     const securityEvents = securityResult.status === "fulfilled" ? securityResult.value.data.data ?? [] : [];
+    if (authResult.status === "fulfilled" && securityResult.status === "fulfilled") {
+      recordNewNotifications("activity", [...authEvents, ...securityEvents], "activity");
+    }
+    if (hasNewNotifications && soundEnabledRef.current) void playNotificationChime();
     setActivityEvents(
       [...authEvents, ...securityEvents].sort(
         (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
       ),
     );
     setLoading(false);
-  }, [playRegistrationChime]);
+  }, [playNotificationChime, user?.role]);
 
   useEffect(() => {
     const initialFetch = window.setTimeout(() => void fetchNotifications(), 0);
@@ -176,6 +219,7 @@ export default function NotificationBell() {
 
   const notifications = [
     ...pendingRegistrations.map((registration) => ({ type: "registration", id: `registration-${registration.id}`, created_at: registration.created_at, registration })),
+    ...pendingStaffRegistrations.map((registration) => ({ type: "staff_registration", id: `staff-registration-${registration.id}`, created_at: registration.created_at, registration })),
     ...pendingRequests.map((request) => ({ type: "request", id: `request-${request.id}`, created_at: request.created_at, request })),
     ...activityEvents.map((event) => ({ type: "activity", id: `activity-${event.id}`, created_at: event.created_at, event })),
   ]
@@ -203,6 +247,10 @@ export default function NotificationBell() {
     setOpen(false);
     navigate("/admin/students/registrations");
   };
+  const navigateToStaffRegistrations = () => {
+    setOpen(false);
+    navigate("/admin/audit-logs/users?tab=pending");
+  };
 
   return (
     <div className="relative" ref={panelRef}>
@@ -226,7 +274,7 @@ export default function NotificationBell() {
               <p className="mb-0 mt-0.5 text-xs text-muted">New registrations, requests, and account/security activity</p>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" aria-label={soundEnabled ? "Turn notification sound off" : "Turn notification sound on"} aria-pressed={soundEnabled} title={soundEnabled ? "Turn sound off" : "Turn sound on"} onClick={() => void toggleSound()} className={`grid size-8 place-items-center rounded-lg transition hover:bg-brand-soft hover:text-primary ${soundEnabled ? "text-brand" : "text-muted"}`}><FontAwesomeIcon icon={soundEnabled ? faVolumeHigh : faVolumeXmark} /></button>
+              <button type="button" aria-label={soundEnabled ? "Turn notification sound off" : "Turn notification sound on"} aria-pressed={soundEnabled} title={soundEnabled ? "Turn sound off" : "Turn sound on and test chime"} onClick={() => void toggleSound()} className={`grid size-8 place-items-center rounded-lg transition hover:bg-brand-soft hover:text-primary ${soundEnabled ? "text-brand" : "text-muted"}`}><FontAwesomeIcon icon={soundEnabled ? faVolumeHigh : faVolumeXmark} /></button>
               <button type="button" aria-label="Close notifications" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-brand-soft hover:text-primary"><FontAwesomeIcon icon={faXmark} /></button>
             </div>
           </header>
@@ -249,6 +297,21 @@ export default function NotificationBell() {
                           <p className="mb-0 mt-0.5 truncate text-xs text-muted">{registration.first_name} {registration.last_name} · {registration.phone || registration.email || "Contact not provided"}</p>
                           <p className="mb-0 mt-1 text-[11px] text-muted">{formatTime(registration.created_at)}</p>
                           <button type="button" onClick={navigateToRegistrations} className="mt-2 rounded-md bg-brand-soft px-2.5 py-1.5 text-xs font-semibold text-brand-strong transition hover:bg-brand/15">View</button>
+                        </div>
+                      </article>
+                    );
+                  }
+
+                  if (notification.type === "staff_registration") {
+                    const { registration } = notification;
+                    return (
+                      <article key={notification.id} className="flex items-start gap-3 px-4 py-3.5">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-500/10 text-sky-500"><FontAwesomeIcon icon={faUserPlus} /></span>
+                        <div className="min-w-0 flex-1">
+                          <p className="m-0 truncate text-sm font-semibold">Teacher account request</p>
+                          <p className="mb-0 mt-0.5 truncate text-xs text-muted">{registration.name} · {registration.email}</p>
+                          <p className="mb-0 mt-1 text-[11px] text-muted">Expires {formatTime(registration.expires_at)}</p>
+                          <button type="button" onClick={navigateToStaffRegistrations} className="mt-2 rounded-md bg-brand-soft px-2.5 py-1.5 text-xs font-semibold text-brand-strong transition hover:bg-brand/15">View</button>
                         </div>
                       </article>
                     );
@@ -294,6 +357,7 @@ export default function NotificationBell() {
           {notifications.length > 0 && (
             <footer className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2.5">
               {visibleNotifications.some((notification) => notification.type === "registration") && <button type="button" onClick={navigateToRegistrations} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View registrations</button>}
+              {visibleNotifications.some((notification) => notification.type === "staff_registration") && <button type="button" onClick={navigateToStaffRegistrations} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">Review accounts</button>}
               {visibleNotifications.some((notification) => notification.type === "request") && <button type="button" onClick={navigateToRequests} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View all requests</button>}
               {visibleNotifications.some((notification) => notification.type === "activity") && <button type="button" onClick={navigateToAudit} className="flex-1 rounded-lg px-2 py-2 text-xs font-semibold text-brand-strong transition hover:bg-brand-soft">View audit log</button>}
               {visibleNotifications.length > 0 && <button type="button" onClick={clearHistory} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-secondary transition hover:bg-rose-500/10 hover:text-rose-600"><FontAwesomeIcon icon={faTrashCan} /> Clear history</button>}

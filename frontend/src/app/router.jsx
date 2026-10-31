@@ -59,6 +59,10 @@ const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
+    path: "/admin/reset-password",
+    element: <LoginPage />,
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>

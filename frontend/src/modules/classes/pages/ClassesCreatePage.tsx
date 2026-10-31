@@ -27,6 +27,7 @@ export default function ClassCreatePage() {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
+  const activeCourses = courses.filter((course) => course.status === "active");
 
   useEffect(() => {
     let active = true;
@@ -79,7 +80,7 @@ export default function ClassCreatePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] space-y-2 lg:-mt-3 lg:-mb-6">
+    <div className="mx-auto w-full max-w-[1800px] space-y-2">
       <button type="button" onClick={() => navigate("/admin/classes")} className="inline-flex items-center gap-2 rounded-lg border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-strong transition hover:border-brand/40 hover:bg-brand/15"><FontAwesomeIcon icon={faArrowLeft} /> Back to classes</button>
       <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex items-center gap-3 border-b border-border bg-gradient-to-r from-brand-soft/70 via-brand-soft/30 to-transparent px-4 py-2.5 sm:px-6">
@@ -87,16 +88,22 @@ export default function ClassCreatePage() {
           <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">Class record</p><h1 className="m-0 text-xl font-bold text-primary sm:text-2xl">Create class</h1><p className="mb-0 mt-1 text-sm text-secondary">{user?.role === "admin" ? "Add a class and optionally assign a teacher." : "Add a class assigned to your teacher account."}</p></div>
         </div>
 
-        <div className="space-y-4 p-4 sm:p-5">
-          <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">Class information</h2><p className="mb-0 mt-1 text-xs text-secondary">Choose the course, lesson, delivery format, and location.</p></div>
+        <div className="space-y-5 p-4 sm:p-5">
+          <section className="border-b border-border pb-5">
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Class details</h2><p className="mb-0 mt-1 text-xs text-secondary">Set the class name, course, lesson, section, delivery type, and academic year.</p></div>
             <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-              <AppInput containerClassName={fieldClass} label="Class name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. PHP + Laravel" error={errors.name?.[0]} required />
-              <div><AppSelect containerClassName={fieldClass} label="Course" name="course_id" required value={form.course_id} onChange={handleChange} placeholder="Select course" options={courses.filter((course) => course.status === "active").map((course) => ({ label: `${course.name}${course.code ? ` · ${course.code}` : ""}`, value: String(course.id) }))} error={errors.course_id?.[0] || errors.course?.[0]} />{courses.filter((course) => course.status === "active").length === 0 && <p className="mt-1 text-[11px] text-muted">No active courses.{user?.role === "admin" && <> <Link to="/admin/courses/create" className="font-semibold text-brand-strong hover:underline">Create a course</Link></>}</p>}</div>
+              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Course" name="course_id" required value={form.course_id} onChange={handleChange} placeholder="Select course" options={activeCourses.map((course) => ({ label: `${course.name}${course.code ? ` · ${course.code}` : ""}`, value: String(course.id) }))} error={errors.course_id?.[0] || errors.course?.[0]} />{activeCourses.length === 0 && <p className="mt-1 text-[11px] text-muted">No active courses.{user?.role === "admin" && <> <Link to="/admin/courses/create" className="font-semibold text-brand-strong hover:underline">Create a course</Link></>}</p>}</div>
               <AppSelect containerClassName={fieldClass} label="Lesson" name="lesson_id" required disabled={!form.course_id} value={form.lesson_id} onChange={handleChange} placeholder="Select lesson" options={(courses.find((course) => String(course.id) === form.course_id)?.lessons || []).filter((lesson) => lesson.status === "active").map((lesson) => ({ label: lesson.lesson_number ? `${lesson.lesson_number}. ${lesson.name}` : lesson.name, value: String(lesson.id) }))} error={errors.lesson_id?.[0] || errors.lesson?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" required value={form.delivery_mode} onChange={handleChange} placeholder="Select class type" options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
+              <AppInput containerClassName={fieldClass} label="Class name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. PHP + Laravel" error={errors.name?.[0]} required />
               <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} placeholder="e.g. A" error={errors.section?.[0]} />
               <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} placeholder="e.g. 2026–2027" error={errors.academic_year?.[0]} required />
+            </div>
+          </section>
+
+          <section className="border-b border-border pb-5">
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Schedule &amp; location</h2><p className="mb-0 mt-1 text-xs text-secondary">Choose where and when this class meets.</p></div>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
               <AppSelect containerClassName={fieldClass} label="Building" name="building_id" required value={form.building_id} onChange={handleChange} placeholder="Select building" options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" required value={form.floor_id} disabled={!form.building_id} onChange={handleChange} placeholder="Select floor" options={(buildings.find((building) => building.id === Number(form.building_id))?.floors || []).filter((floor) => floor.status === "active").map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Room" name="room_id" required value={form.room_id} disabled={!form.floor_id} onChange={handleChange} placeholder="Select room" options={(buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms || []).filter((room) => room.status === "active").map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />
@@ -105,8 +112,8 @@ export default function ClassCreatePage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">Teaching details</h2><p className="mb-0 mt-1 text-xs text-secondary">{user?.role === "admin" ? "Assign a teacher if known and add helpful class notes." : "The class teacher is assigned from your account."}</p></div>
+          <section>
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Teaching details</h2><p className="mb-0 mt-1 text-xs text-secondary">{user?.role === "admin" ? "Assign a teacher if known and add helpful class notes." : "The class teacher is assigned from your account."}</p></div>
             <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
               {user?.role === "admin"
                 ? <AppSelect containerClassName={fieldClass} label="Teacher (optional)" name="teacher_id" value={form.teacher_id} onChange={handleChange} placeholder="Unassigned" options={teachers} error={errors.teacher_id?.[0]} />

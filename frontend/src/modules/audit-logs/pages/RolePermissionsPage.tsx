@@ -14,7 +14,6 @@ import {
   faMagnifyingGlass,
   faShieldHalved,
   faUserGraduate,
-  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { getTeacherModulePermissions, updateTeacherModulePermissions } from "@/modules/audit-logs/api/auditLogsApi";
@@ -195,25 +194,11 @@ export default function RolePermissionsPage() {
         <span>Administration</span><span aria-hidden="true">›</span><span>Roles &amp; permissions</span><span aria-hidden="true">›</span><span className="font-semibold capitalize text-primary">{selectedRole}</span>
       </div>
 
-      <section className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-lg text-brand"><FontAwesomeIcon icon={faUsers} /></span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="m-0 text-lg font-bold tracking-tight text-primary sm:text-xl">{selectedRole === "admin" ? "Admin Role" : "Teacher Role"}</h1>
-            <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[10px] font-semibold text-brand">System role</span>
-          </div>
-          <p className="mb-0 mt-1 text-xs leading-5 text-muted">
-            {selectedRole === "admin"
-              ? "Administrators have full access to every school module."
-              : "Choose which modules and actions teachers can use for their assigned classes."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 sm:justify-self-end">
-          <button type="button" onClick={() => navigate("/admin/audit-logs")} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border px-3.5 text-sm font-medium text-secondary transition hover:bg-app-bg">
-            <FontAwesomeIcon icon={faArrowLeft} /> Back
-          </button>
-        </div>
-      </section>
+      <div className="flex justify-start">
+        <button type="button" onClick={() => navigate("/admin/audit-logs")} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3.5 text-sm font-medium text-secondary transition hover:border-brand/30 hover:bg-brand-soft hover:text-brand-strong">
+          <FontAwesomeIcon icon={faArrowLeft} /> Back
+        </button>
+      </div>
 
       {error && <p role="alert" className="m-0 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-500">{error}</p>}
       {success && <p role="status" className="m-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">{success}</p>}

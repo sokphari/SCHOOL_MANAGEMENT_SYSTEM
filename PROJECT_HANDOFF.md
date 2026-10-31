@@ -627,6 +627,11 @@ repeating discovery work.
   subsequent authenticated API requests. Self-blocking/deletion and removal of
   the last active admin are prevented. Run `php artisan migrate` to add the
   `users.is_active` field before using the new account controls.
+- Simplified the top of the Roles & Permissions page by removing the role
+  summary card while keeping its Back button in a compact row above permissions.
+- Reorganized the Create Class form into Class details, Schedule & location, and
+  Teaching details sections, removing nested panels to make the inputs easier to
+  scan without changing the fields or their behavior.
 - Verification for this change: PHP syntax, Pint on changed PHP files, API
   route discovery, frontend lint, TypeScript checking, and production build
   passed. Local PHP feature tests could not connect to SQLite because the local
@@ -739,10 +744,44 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
 - New API routes: `POST /api/student-registrations/qr-tokens` (admin issue), `GET /api/public/student-registrations/qr-status`, `POST /api/public/student-registrations`, `GET /api/student-registrations`, and admin `POST /api/student-registrations/{id}/approve|reject`.
 - Applied `2026_10_31_000004_create_student_registrations_table` and `2026_10_31_000005_create_student_registration_tokens_table` to the local Docker database. For another environment, run `cd backend && php artisan migrate`. No dependency was added.
 - Verification: frontend `npm run typecheck`, `npm run lint`, and `npm run build`; PHP syntax checks, Laravel route discovery, Pint formatting, and `git diff --check` pass. No feature tests were run. Existing large-bundle warning remains on the production build.
-- Admin notification bell now includes pending student registrations and routes View actions to the registration review page. It refreshes automatically every 10 seconds and immediately when the browser tab regains focus; this is near-real-time polling and does not require a page reload. Sound is off by default and can be enabled in the notification panel; enabled sound plays one brief chime when newly detected registration IDs arrive, not on every poll. The sound preference and dismissed notification history are stored in localStorage per admin user. “Clear history” only dismisses notification entries from this browser; it does not delete applications, requests, or audit logs. No broadcasting/WebSocket service was added.
+- Admin notification bell now includes pending student registrations and routes View actions to the registration review page. It refreshes automatically every 10 seconds and immediately when the browser tab regains focus; this is near-real-time polling and does not require a page reload. Sound is off by default and can be enabled in the notification panel; enabled sound plays one brief chime when new registration, permission request, or account/security notification IDs arrive, not on every poll. The sound preference and dismissed notification history are stored in localStorage per admin user. “Clear history” only dismisses notification entries from this browser; it does not delete applications, requests, or audit logs. No broadcasting/WebSocket service was added.
 - Restyled `StudentQrCard` as a reusable QR dialog: it supports both current-student request QR codes and one-time registration QR codes, with copy and print actions. The QR registrations page now uses the screenshot-inspired full-width application list; admins generate registration QR codes from the page header and view/share them in the dialog.
 - Registration approve/reject actions use consistent semantic button sizes, keyboard focus rings, and action-specific pending labels. Both actions are disabled while one is in progress for that application.
 - Removed per-student QR buttons from the Students table actions. The page-level Registration QR action remains available for admin-issued enrollment codes.
 - Expanded audit logging to record successful authenticated admin/teacher GET page-data views as `<module>.viewed`, successful mutations, failed authenticated mutations as `<module>.action_failed`, plus existing login/security events. Audit-log reads, `/api/me`, public reads, and the notification bell's explicitly marked background polls are excluded to prevent noisy self-logging; normal user visits to student request/registration lists are still recorded. The Audit Log page now filters by Admin or Teacher role and explains the captured event types. No request bodies, passwords, or tokens are recorded.
 - Audit Log filters default to the Today preset while the two calendar inputs remain blank. Presets include Today, Yesterday, This week (Monday through today), Custom range, and All time. Calendar values are only used for the Custom range preset.
 - Class cards now display the course name in the top badge; class name and ID remain in the subtitle. Removed the duplicate Course detail row, and the Class teacher row shows the assigned teacher's full name.
+
+
+## Follow-up — Notification sound reliability (2026-10-31)
+
+- Fixed notification sound playback in `frontend/src/modules/student-requests/components/NotificationBell.jsx`. A saved “sound on” preference could survive a reload while the Web Audio context was never created, leaving new-registration alerts silent. The bell now unlocks audio on the first user interaction, recovers suspended contexts when playing, and previews the chime when sound is enabled. New registrations, permission requests, and account/security events all play a chime; the initial notification load stays silent. Increased chime volume and added a WebKit AudioContext fallback.
+- Verification: frontend `npm run typecheck` and `npm run lint -- --no-warn-ignored` passed. Device/browser volume and notification polling still affect whether and when a registration alert is heard.
+
+## Follow-up — Staff account signup and password recovery (2026-10-31)
+
+- Added login-page views for teacher account requests, forgot password, and
+  password reset. Teacher signups are requests only; they do not create a usable
+  account until an admin approves them. The reset email link returns to the SPA.
+- Added `staff_account_registrations` and `blocked_ips` tables. Staff requests
+  expire after 24 hours and are excluded from the admin queue and bell after
+  expiry. The admin Users page now has a Pending requests tab with Approve,
+  Reject, Block IP, and Unblock IP actions. Approval creates a teacher login and
+  links or creates a teacher profile.
+- Blocked IP addresses are rejected on login and new account signup. The API
+  prevents blocking the IP currently being used by the admin, to avoid locking
+  out the active administrator. Existing accounts/sessions are not blocked by
+  this IP rule.
+- New account requests appear in the notification bell and expire there with
+  their 24-hour request. New requests, student registrations, student permission
+  requests, and account/security alerts use the notification chime. Polling is
+  excluded from audit events.
+- Password reset email uses Laravel's mailer. Local `.env.example` defaults to
+  the `log` mailer, so configure SMTP/mail credentials and `FRONTEND_URL` in the
+  deployed backend `.env` for real email delivery.
+- Setup: run `cd backend && php artisan migrate` to add the account request and
+  blocked IP tables. Frontend typecheck/lint and PHP syntax checks passed. No
+  endpoint/browser email delivery test was run.
+- Fixed the CORS allowlist to permit the notification poll's custom
+  `X-Notification-Poll` header. Without it, cross-origin browser preflight
+  requests can block notification data, including pending teacher signups.
