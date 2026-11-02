@@ -5,6 +5,7 @@ import type {
   ClassPage,
   ClassPayload,
   ClassQuery,
+  ClassScheduleTemplate,
   ClassStudent,
   SchoolClass,
 } from "@/modules/classes/types/class";
@@ -57,3 +58,15 @@ export const transferStudentToClass = (sourceClassId: string | number, studentId
 
 export const switchClassTeacher = (classId: number, teacherId: number) =>
   api.put(`/classes/${classId}/teacher`, { teacher_id: teacherId });
+
+export const getClassScheduleTemplates = () =>
+  api.get<ClassScheduleTemplate[]>("/classes/schedule-templates");
+
+export const createClassScheduleTemplate = (payload: Omit<ClassScheduleTemplate, "id">) =>
+  api.post<{ message: string; data: ClassScheduleTemplate }>("/classes/schedule-templates", payload);
+
+export const updateClassScheduleTemplate = (id: number, payload: Omit<ClassScheduleTemplate, "id">) =>
+  api.put<{ message: string; data: ClassScheduleTemplate }>(`/classes/schedule-templates/${id}`, payload);
+
+export const deleteClassScheduleTemplate = (id: number) =>
+  api.delete<{ message: string }>(`/classes/schedule-templates/${id}`);

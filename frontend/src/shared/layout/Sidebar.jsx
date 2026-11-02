@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowRightFromBracket,
   faAward,
   faBook,
   faBuilding,
@@ -36,10 +35,10 @@ const menuIcons = {
   Settings: faGear,
 };
 
-const expandableItems = new Set(["Students", "Teachers", "Classes", "Audit log"]);
+const expandableItems = new Set(["Students", "Teachers", "Classes", "Timetable", "Audit log"]);
 
 export default function Sidebar({ isOpen, onNavigate }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const landingFeature = {
     Dashboard: "dashboard.view",
@@ -57,6 +56,7 @@ export default function Sidebar({ isOpen, onNavigate }) {
     students: location.pathname.startsWith("/admin/students"),
     teachers: location.pathname.startsWith("/admin/teachers"),
     classes: location.pathname.startsWith("/admin/classes"),
+    timetable: location.pathname.startsWith("/admin/timetable"),
     audit: location.pathname.startsWith("/admin/audit-logs"),
   };
   const [expandedGroups, setExpandedGroups] = useState({ students: false, teachers: false, classes: false, audit: false });
@@ -76,6 +76,7 @@ export default function Sidebar({ isOpen, onNavigate }) {
 
   const renderSubmenu = (item, group) => {
     const isAudit = item.label === "Audit log";
+    const isTimetable = item.label === "Timetable";
     const createLabel = { Students: "Student", Teachers: "Teacher", Classes: "Class" }[item.label];
     const canCreateClass = item.label === "Classes" && user?.feature_permissions?.includes("classes.create");
     const hasCreateLink = item.label === "Teachers" || user?.role === "admin" || canCreateClass;
@@ -86,7 +87,12 @@ export default function Sidebar({ isOpen, onNavigate }) {
         <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
           <div className="min-h-0 overflow-hidden">
             <div id={submenuId} className="ml-[19px] flex flex-col gap-1 border-l border-white/10 py-1 pl-3">
-              {isAudit ? (
+              {isTimetable ? (
+                <>
+                  <NavLink to={item.path} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive && location.pathname === item.path ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>View timetable</NavLink>
+                  {user?.role === "admin" && <NavLink to={`${item.path}/templates`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Schedule templates</NavLink>}
+                </>
+              ) : isAudit ? (
                 <>
                   <NavLink to={`${item.path}/users`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Users && Account</NavLink>
                   <NavLink to={`${item.path}/roles`} onClick={onNavigate} className={({ isActive }) => `rounded-lg px-3 py-2.5 text-[13px] no-underline transition-colors ${isActive ? "bg-white/10 font-semibold text-white" : "text-sidebar-muted hover:bg-white/[0.06] hover:text-sidebar-ink"}`}>Roles && Permission</NavLink>
@@ -161,12 +167,6 @@ export default function Sidebar({ isOpen, onNavigate }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/10 pt-3">
-        <button className="flex min-h-10 w-full items-center gap-3 rounded-lg border border-transparent px-3.5 text-left text-sm font-medium text-violet-100/80 transition hover:bg-rose-400/10 hover:text-white" type="button" onClick={logout}>
-          <FontAwesomeIcon icon={faArrowRightFromBracket} />
-          <span>Sign out</span>
-        </button>
-      </div>
     </aside>
   );
 }

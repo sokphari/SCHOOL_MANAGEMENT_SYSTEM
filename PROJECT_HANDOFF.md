@@ -797,3 +797,106 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
 - Added explicit availability labels to the timetable: empty teacher/day cells
   show Available, and each session card shows Unavailable for its scheduled
   interval (not the full day).
+
+## Follow-up — Whole-project verification (2026-11-02)
+
+- Ran the Laravel feature suite in the running backend container against the
+  test suite's in-memory SQLite database: 9 tests passed with 194 assertions.
+- Added integration coverage for one-time student registration QR submission,
+  approval/rejection, teacher account signup, admin approval, blocked-IP
+  enforcement/unblock, and email-token password recovery.
+- Fixed an audit gap: API authentication/authorization/rate-limit exceptions are
+  recorded by the Laravel exception renderer, since auth middleware can throw
+  before the API audit middleware receives a response. Notification polling is
+  still excluded.
+- Teacher class-creation supporting endpoints (`/api/courses` and
+  `/api/locations/buildings`) now require the `classes.create` feature, matching
+  the permission used by the class creation page.
+- Student QR submission explicitly assigns and returns `pending` status rather
+  than relying only on the database default, which left the immediate response
+  with a null status.
+- The endpoint test fixture now marks its newly created teacher account active;
+  this makes the test reflect real approved teacher accounts.
+- Verified the frontend with `npm run typecheck`, `npm run lint --
+  --no-warn-ignored`, and `npm run build`; all passed. The production build still
+  warns that its main JavaScript chunk exceeds 500 kB.
+- Smoke-checked the live local frontend routes for login, dashboard, students,
+  classes, attendance, courses, facilities, grades, timetable, and audit logs;
+  each returned HTTP 200. Representative module source imports returned HTTP
+  200. `GET /up` and `GET /api/public/settings` also returned HTTP 200.
+- PHP syntax, Laravel Pint check-only formatting, and `git diff --check` passed.
+- Browser click-through across every interaction and real email delivery were
+  not run; the successful checks cover backend API workflows, app route
+  delivery, typechecking, linting, and production compilation.
+
+## Follow-up — Simplified class creation form (2026-11-02)
+
+- Removed the Class name, Section, and Academic year inputs from
+  `ClassesCreatePage.tsx` as requested.
+- The submitted class name now comes from the selected lesson, Section is sent
+  empty, and Academic year is generated as the current year through the next
+  year. Updated the helper text so users know those values are assigned for
+  them.
+- No dependencies or backend schema changed.
+
+## Follow-up — Class weekday and time scheduling (2026-11-02)
+
+- Replaced the class create/edit free-text Term and Time inputs with reusable
+  weekday and time controls. Quick presets cover Mon–Fri, Mon–Thu, and
+  Sat–Sun; individual weekday checkboxes support custom schedules.
+- Class forms now submit ISO weekdays plus start/end times. The backend creates
+  real timetable session records in the same database transaction as the class
+  change and rejects overlapping teacher or room bookings.
+- Added database-backed class schedule templates with admin list/create/edit,
+  activation, and delete workflows under the Timetable module. Class forms load
+  active templates through the API; custom weekdays and times remain available.
+- Class form requests and timetable session records stay dynamic; the template
+  names, selected days, and time ranges are stored in `class_schedule_templates`
+  and can be changed without editing frontend source arrays.
+- Added idempotent starter schedule records to `ClassScheduleTemplateSeeder`;
+  the local database migration and seeder have been applied. Existing template
+  edits are preserved when the seeder runs again.
+- Simplified class creation to separate Term and Time dropdowns populated from
+  distinct values in active database schedule templates. Class create/edit
+  submits the selected weekday and time values to timetable session records.
+- Legacy class `term` and `time` summaries are still populated, so existing
+  class cards/details keep displaying schedule information without a new module
+  or database migration. Existing saved schedules are loaded when editing.
+- Updated the API feature-test payloads for the new schedule contract and added
+  assertions that class creation creates weekday sessions. No dependency was
+  installed.
+
+## Follow-up — Class create data flow validation (2026-11-02)
+
+- Class option requests now load independently, so a teacher-list failure does
+  not prevent courses, buildings, or schedules from appearing. The form shows
+  loading and retry states for option requests.
+- Empty building and schedule catalogs now explain how an admin can create the
+  missing data. The submit action stays disabled until its required catalogs
+  are available.
+- Class create/update requests now require active course, lesson, building,
+  floor, room, and teacher records, and validate each child against its
+  selected parent. Class creation stores the selected lesson name as the class
+  name, keeping labels consistent with the chosen IDs.
+- Demo seeding now creates active buildings, floors, and rooms and associates
+  the demo classes with matching location records. This supplies the required
+  location data for a fresh local/demo setup; it does not install dependencies.
+
+## Follow-up — Hide student and teacher codes from create/list UI (2026-11-02)
+
+- Removed student code and teacher code from their create forms and list tables;
+  updated search placeholders to describe visible search fields.
+- The backend now generates unique `STU-YYYY-XXXXXX` and `TCH-YYYY-XXXXXX`
+  codes when creating records without a code. Existing codes remain stored for
+  QR registration and internal references, and edit forms still support code
+  changes.
+- Added an API test that creates each record without a code and checks the
+  generated code format. No dependency was installed.
+
+## Follow-up — Profile menu sign out (2026-11-02)
+
+- Moved Sign out from the bottom of the sidebar into a profile dropdown in the
+  top-right header. The menu shows the signed-in name and role and works for
+  admin and teacher accounts.
+- Added outside-click and Escape-key dismissal with focus returned to the
+  profile button. No dependency was installed.

@@ -3,18 +3,40 @@ import axios from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
-import { getClass, updateClass } from "@/modules/classes/api/classApi.ts";
+import { getClass, getClassScheduleTemplates, updateClass } from "@/modules/classes/api/classApi.ts";
 import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
 import { getBuildings } from "@/modules/locations/api/locationApi.ts";
 import { getCourses } from "@/modules/courses/api/courseApi.ts";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
-import type { ClassForm, ClassPayload, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
+import ClassScheduleSelect from "@/modules/classes/components/ClassScheduleSelect";
+import type { ClassForm, ClassPayload, ClassScheduleTemplate, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
 import type { BuildingLocation } from "@/modules/locations/types/location";
 import type { Course } from "@/modules/courses/types/course";
 
 const fieldClass = "mb-0";
+
+const legacyDays = (term: string | null | undefined): number[] => {
+  const normalized = (term || "").toLowerCase();
+  if (normalized.includes("mon-fri") || normalized.includes("monday-friday")) return [1, 2, 3, 4, 5];
+  if (normalized.includes("mon-thu") || normalized.includes("monday-thursday")) return [1, 2, 3, 4];
+  if (normalized.includes("sat-sun") || normalized.includes("saturday-sunday")) return [6, 7];
+  const dayNames = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const abbreviations = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  const found = dayNames.flatMap((day, index) => normalized.includes(day) || normalized.includes(abbreviations[index]) ? [index + 1] : []);
+  return found.length ? found : [1, 2, 3, 4, 5];
+};
+
+const legacyTime = (value: string | null | undefined, fallback: string): string => {
+  if (!value) return fallback;
+  const match = value.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return fallback;
+  let hour = Number(match[1]);
+  if (match[3]?.toUpperCase() === "PM" && hour < 12) hour += 12;
+  if (match[3]?.toUpperCase() === "AM" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${match[2]}`;
+};
 
 export default function ClassEditPage() {
   const { id } = useParams();
@@ -24,6 +46,7 @@ export default function ClassEditPage() {
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [buildings, setBuildings] = useState<BuildingLocation[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ClassScheduleTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
@@ -34,16 +57,18 @@ export default function ClassEditPage() {
     const fetchData = async () => {
       try {
         if (!id) throw new Error("Missing class id");
-        const [classResponse, teacherResponse, buildingResponse, courseResponse] = await Promise.all([
+        const [classResponse, teacherResponse, buildingResponse, courseResponse, scheduleResponse] = await Promise.all([
           getClass(id),
           user?.role === "admin" ? getTeachers() : Promise.resolve(null),
           getBuildings(),
           getCourses(),
+          getClassScheduleTemplates().catch(() => null),
         ]);
         if (!active) return;
         const data = classResponse.data;
         setTeachers((teacherResponse?.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
         setBuildings(buildingResponse.data || []);
+        setScheduleTemplates(scheduleResponse?.data || []);
         const courseList = courseResponse.data || [];
         setCourses(courseList);
         const selectedCourse = courseList.find((course) => course.id === data.course_id) || courseList.find((course) => course.name === data.course);
@@ -60,8 +85,9 @@ export default function ClassEditPage() {
           building_id: data.building_id ? String(data.building_id) : "",
           floor_id: data.floor_id ? String(data.floor_id) : "",
           room_id: data.room_id ? String(data.room_id) : "",
-          term: data.term || "Term 1",
-          time: data.time || "08:00",
+          schedule_days: data.timetable_sessions?.length ? [...new Set(data.timetable_sessions.map((session) => session.day_of_week))].sort((a, b) => a - b) : legacyDays(data.term),
+          starts_at: data.timetable_sessions?.[0]?.starts_at?.slice(0, 5) || legacyTime(data.time, "08:00"),
+          ends_at: data.timetable_sessions?.[0]?.ends_at?.slice(0, 5) || legacyTime(data.time?.split(/\s*[-–]\s*/)[1], "09:30"),
           teacher_id: data.teacher_id ? String(data.teacher_id) : "",
           description: data.description || "",
           status: data.status || "active",
@@ -137,8 +163,7 @@ export default function ClassEditPage() {
               <AppSelect containerClassName={fieldClass} label="Building" name="building_id" value={form.building_id} onChange={handleChange} placeholder="Select building" options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" value={form.floor_id} onChange={handleChange} placeholder="Select floor" options={(buildings.find((building) => building.id === Number(form.building_id))?.floors || []).filter((floor) => floor.status === "active").map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Room" name="room_id" value={form.room_id} onChange={handleChange} placeholder="Select room" options={(buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms || []).filter((room) => room.status === "active").map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} error={errors.term?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} />
+              <div className="sm:col-span-2 xl:col-span-4"><ClassScheduleSelect templates={scheduleTemplates} days={form.schedule_days} startsAt={form.starts_at} endsAt={form.ends_at} onDaysChange={(days) => { setForm((current) => current ? ({ ...current, schedule_days: days }) : current); setErrors((current) => ({ ...current, schedule_days: undefined })); }} onTimeChange={(startsAt, endsAt) => { setForm((current) => current ? ({ ...current, starts_at: startsAt, ends_at: endsAt }) : current); setErrors((current) => ({ ...current, starts_at: undefined, ends_at: undefined })); }} errors={errors} /></div>
             </div>
           </section>
 

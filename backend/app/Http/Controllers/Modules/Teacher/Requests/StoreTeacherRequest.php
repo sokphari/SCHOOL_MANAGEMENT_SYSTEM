@@ -20,7 +20,7 @@ class StoreTeacherRequest extends FormRequest
                 Rule::exists('users', 'id')->where('role', 'teacher'),
                 Rule::unique('teachers', 'user_id'),
             ],
-            'teacher_code' => ['required', 'string', 'max:50', 'unique:teachers,teacher_code'],
+            'teacher_code' => ['sometimes', 'required', 'string', 'max:50', 'unique:teachers,teacher_code'],
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'gender' => ['nullable', 'in:male,female'],

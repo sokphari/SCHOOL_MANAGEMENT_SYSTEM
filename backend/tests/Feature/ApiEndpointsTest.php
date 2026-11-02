@@ -88,6 +88,27 @@ class ApiEndpointsTest extends TestCase
             'module' => 'security',
             'status_code' => 401,
         ]);
+
+        $scheduleTemplate = $this->authenticatedAs($adminUser)->postJson('/api/classes/schedule-templates', [
+            'name' => 'Mon-Tue Test Schedule',
+            'days' => [1, 2],
+            'starts_at' => '08:00',
+            'ends_at' => '09:30',
+            'status' => 'active',
+        ])->assertCreated()->assertJsonPath('data.days.0', 1)->json('data');
+        $templateId = $scheduleTemplate['id'];
+        $this->authenticatedAs($adminUser)->getJson('/api/classes/schedule-templates')
+            ->assertOk()->assertJsonFragment(['name' => 'Mon-Tue Test Schedule']);
+        $this->authenticatedAs($adminUser)->putJson("/api/classes/schedule-templates/{$templateId}", [
+            'name' => 'Mon-Tue Updated Schedule',
+            'days' => [1, 2],
+            'starts_at' => '10:00',
+            'ends_at' => '14:00',
+            'status' => 'active',
+        ])->assertOk()->assertJsonPath('data.name', 'Mon-Tue Updated Schedule');
+        $this->assertDatabaseHas('class_schedule_templates', ['id' => $templateId, 'starts_at' => '10:00']);
+        $this->authenticatedAs($adminUser)->deleteJson("/api/classes/schedule-templates/{$templateId}")->assertOk();
+
         $this->authenticatedAs($teacherUser)->getJson('/api/locations/buildings')->assertOk();
         $this->authenticatedAs($teacherUser)->getJson('/api/courses')->assertOk();
         $building = $this->authenticatedAs($adminUser)->postJson('/api/locations/buildings', [
@@ -196,6 +217,7 @@ class ApiEndpointsTest extends TestCase
             'email' => 'api-test-teacher@example.com',
             'password' => 'password',
             'role' => 'teacher',
+            'is_active' => true,
         ]);
         $teacherData = [
             'user_id' => $teacherUser->id,
@@ -243,16 +265,20 @@ class ApiEndpointsTest extends TestCase
             'building_id' => $buildingId,
             'floor_id' => $floorId,
             'room_id' => $roomId,
-            'term' => 'Monday and Wednesday',
-            'time' => '09:00 AM - 10:30 AM',
+            'schedule_days' => [1, 2],
+            'starts_at' => '09:00',
+            'ends_at' => '10:30',
             'teacher_id' => $teacherId,
             'status' => 'active',
         ];
         $class = $this->authenticatedAs($adminUser)->postJson('/api/classes', $classData)->assertCreated()
             ->assertJsonPath('data.course', 'API Test Course Updated')
             ->assertJsonPath('data.lesson', 'API Test Lesson Updated')
+            ->assertJsonPath('data.term', 'Mon-Tue')
             ->json('data');
         $classId = $class['id'];
+        $this->assertDatabaseHas('timetable_sessions', ['school_class_id' => $classId, 'day_of_week' => 1, 'starts_at' => '09:00', 'ends_at' => '10:30']);
+        $this->assertDatabaseHas('timetable_sessions', ['school_class_id' => $classId, 'day_of_week' => 2, 'starts_at' => '09:00', 'ends_at' => '10:30']);
         $this->authenticatedAs($adminUser)->deleteJson("/api/lessons/{$lessonId}")->assertStatus(409);
         $this->authenticatedAs($adminUser)->deleteJson("/api/courses/{$courseId}")->assertStatus(409);
         $this->authenticatedAs($adminUser)->deleteJson("/api/locations/rooms/{$roomId}")->assertStatus(409);
@@ -273,7 +299,6 @@ class ApiEndpointsTest extends TestCase
         ])->assertCreated()->json('data');
         $attendanceId = $attendance['id'];
 
-        // This assertion currently exposes the known broken index implementation.
         $this->authenticatedAs($adminUser)->getJson('/api/attendances')->assertOk();
         $this->authenticatedAs($adminUser)->getJson("/api/attendances/{$attendanceId}")->assertOk();
         $this->authenticatedAs($adminUser)->getJson("/api/classes/{$classId}/attendance/{$attendanceDate}")->assertOk();
@@ -337,13 +362,13 @@ class ApiEndpointsTest extends TestCase
         $this->authenticatedAs($teacherUser)->getJson('/api/timetable/classes')->assertOk();
         $this->authenticatedAs($teacherUser)->postJson('/api/timetable', [
             'school_class_id' => $classId,
-            'day_of_week' => 2,
+            'day_of_week' => 4,
             'starts_at' => '10:00',
             'ends_at' => '11:00',
         ])->assertForbidden();
         $timetableSession = $this->authenticatedAs($adminUser)->postJson('/api/timetable', [
             'school_class_id' => $classId,
-            'day_of_week' => 2,
+            'day_of_week' => 4,
             'starts_at' => '10:00',
             'ends_at' => '11:00',
         ])->assertCreated()->json('data');
@@ -351,13 +376,13 @@ class ApiEndpointsTest extends TestCase
         $this->authenticatedAs($adminUser)->getJson('/api/timetable')->assertOk();
         $this->authenticatedAs($adminUser)->putJson("/api/timetable/{$timetableSessionId}", [
             'school_class_id' => $classId,
-            'day_of_week' => 2,
+            'day_of_week' => 4,
             'starts_at' => '11:00',
             'ends_at' => '12:00',
         ])->assertOk();
         $this->authenticatedAs($adminUser)->postJson('/api/timetable', [
             'school_class_id' => $classId,
-            'day_of_week' => 2,
+            'day_of_week' => 4,
             'starts_at' => '11:30',
             'ends_at' => '12:30',
         ])->assertUnprocessable();
@@ -515,12 +540,82 @@ class ApiEndpointsTest extends TestCase
             'building_id' => $building->id,
             'floor_id' => $floor->id,
             'room_id' => $room->id,
-            'term' => 'Monday and Wednesday',
-            'time' => '09:00 AM - 10:30 AM',
+            'schedule_days' => [6],
+            'starts_at' => '09:00',
+            'ends_at' => '10:30',
             'teacher_id' => $otherTeacherId,
             'status' => 'inactive',
         ])->assertCreated()
             ->assertJsonPath('data.teacher_id', $teacherId)
             ->assertJsonPath('data.status', 'active');
+    }
+
+    public function test_class_creation_rejects_mismatched_options_and_uses_selected_record_names(): void
+    {
+        $this->seed(SchoolDemoSeeder::class);
+        $this->withServerVariables(['HTTP_ORIGIN' => 'http://localhost:5176']);
+        $adminUser = User::where('email', 'admin@example.com')->firstOrFail();
+        $courses = Course::where('status', 'active')->orderBy('id')->take(2)->get();
+        $course = $courses[0];
+        $lesson = Lesson::where('course_id', $course->id)->where('status', 'active')->firstOrFail();
+        $otherCourseLesson = Lesson::where('course_id', $courses[1]->id)->where('status', 'active')->firstOrFail();
+        $room = Room::with('floor.building')->where('status', 'active')->firstOrFail();
+        $differentBuilding = Building::where('id', '!=', $room->floor->building_id)->where('status', 'active')->firstOrFail();
+        $differentFloor = Floor::where('building_id', $differentBuilding->id)->where('status', 'active')->firstOrFail();
+        $payload = [
+            'name' => 'Client supplied name',
+            'course' => 'Client supplied course',
+            'lesson' => 'Client supplied lesson',
+            'course_id' => $course->id,
+            'lesson_id' => $lesson->id,
+            'delivery_mode' => 'physical',
+            'academic_year' => '2026-2027',
+            'building_id' => $room->floor->building_id,
+            'floor_id' => $room->floor_id,
+            'room_id' => $room->id,
+            'schedule_days' => [7],
+            'starts_at' => '09:00',
+            'ends_at' => '10:30',
+        ];
+
+        $this->authenticatedAs($adminUser)->postJson('/api/classes', [
+            ...$payload,
+            'lesson_id' => $otherCourseLesson->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors('lesson_id');
+
+        $this->authenticatedAs($adminUser)->postJson('/api/classes', [
+            ...$payload,
+            'building_id' => $differentBuilding->id,
+            'floor_id' => $differentFloor->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors('room_id');
+
+        $this->authenticatedAs($adminUser)->postJson('/api/classes', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.name', $lesson->name)
+            ->assertJsonPath('data.course', $course->name)
+            ->assertJsonPath('data.lesson', $lesson->name);
+    }
+
+    public function test_student_and_teacher_codes_are_generated_when_create_forms_omit_them(): void
+    {
+        $this->seed(SchoolDemoSeeder::class);
+        $this->withServerVariables(['HTTP_ORIGIN' => 'http://localhost:5176']);
+        $adminUser = User::where('email', 'admin@example.com')->firstOrFail();
+
+        $student = $this->authenticatedAs($adminUser)->postJson('/api/students', [
+            'first_name' => 'Generated',
+            'last_name' => 'Student',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+
+        $this->assertMatchesRegularExpression('/^STU-\d{4}-[A-Z0-9]{6}$/', $student['student_code']);
+
+        $teacher = $this->authenticatedAs($adminUser)->postJson('/api/teachers', [
+            'first_name' => 'Generated',
+            'last_name' => 'Teacher',
+            'status' => 'active',
+        ])->assertCreated()->json('data');
+
+        $this->assertMatchesRegularExpression('/^TCH-\d{4}-[A-Z0-9]{6}$/', $teacher['teacher_code']);
     }
 }

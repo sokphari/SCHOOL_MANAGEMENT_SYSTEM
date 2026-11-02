@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Modules\Class\Controllers\ClassScheduleTemplateController;
 use App\Http\Controllers\Modules\Class\Controllers\SchoolClassController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +11,7 @@ Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin'])->group(fun
 });
 
 Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin,teacher'])->group(function () {
+    Route::get('/classes/schedule-templates', [ClassScheduleTemplateController::class, 'index']);
     Route::post('/classes', [SchoolClassController::class, 'store']);
     Route::put('/classes/{class}', [SchoolClassController::class, 'update']);
     Route::patch('/classes/{class}', [SchoolClassController::class, 'update']);
@@ -21,4 +23,10 @@ Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin,teacher'])->g
     Route::put('/classes/{class}/teacher', [SchoolClassController::class, 'switchTeacher']);
     Route::get('/classes', [SchoolClassController::class, 'index']);
     Route::get('/classes/{class}', [SchoolClassController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'session.lifetime', 'role:admin'])->group(function () {
+    Route::post('/classes/schedule-templates', [ClassScheduleTemplateController::class, 'store']);
+    Route::put('/classes/schedule-templates/{scheduleTemplate}', [ClassScheduleTemplateController::class, 'update']);
+    Route::delete('/classes/schedule-templates/{scheduleTemplate}', [ClassScheduleTemplateController::class, 'destroy']);
 });

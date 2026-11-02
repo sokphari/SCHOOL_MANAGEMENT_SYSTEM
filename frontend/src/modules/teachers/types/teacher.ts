@@ -34,7 +34,7 @@ export interface TeacherFilters {
 
 export interface TeacherForm {
   user_id: string;
-  teacher_code: string;
+  teacher_code?: string;
   first_name: string;
   last_name: string;
   gender: "" | TeacherGender;

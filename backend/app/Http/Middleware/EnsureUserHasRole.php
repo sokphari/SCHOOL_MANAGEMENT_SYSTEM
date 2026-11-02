@@ -103,7 +103,7 @@ class EnsureUserHasRole
                 str_contains($uri, 'classes/{class}/pre-end') => 'pre_end',
                 str_contains($uri, 'classes/{class}/resume') => 'resume',
                 str_contains($uri, 'classes/{class}') && in_array($method, ['PUT', 'PATCH'], true) => 'edit',
-                str_contains($uri, 'courses'), str_contains($uri, 'locations/buildings') => 'view_list',
+                str_contains($uri, 'courses'), str_contains($uri, 'locations/buildings') => 'create',
                 str_contains($uri, 'classes/{class}') => 'view_details',
                 default => 'view_list',
             },

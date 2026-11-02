@@ -13,7 +13,7 @@ const fieldClass = "mb-0";
 export default function StudentCreatePage() {
   const navigate = useNavigate();
   const [form, setForm] = useState<StudentForm>({
-    student_code: "", first_name: "", last_name: "", gender: "", date_of_birth: "",
+    first_name: "", last_name: "", gender: "", date_of_birth: "",
     phone: "", email: "", address: "", guardian_name: "", guardian_phone: "",
     enrollment_date: "", status: "active",
   });
@@ -57,7 +57,6 @@ export default function StudentCreatePage() {
 
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
-            <AppInput containerClassName={fieldClass} label="Student code" name="student_code" value={form.student_code} onChange={handleChange} placeholder="e.g. S001" error={errors.student_code?.[0]} required />
             <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} placeholder="Enter first name" error={errors.first_name?.[0]} required />
             <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} placeholder="Enter last name" error={errors.last_name?.[0]} required />
             <AppSelect containerClassName={fieldClass} label="Gender" name="gender" value={form.gender} onChange={handleChange} placeholder="Select gender" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} error={errors.gender?.[0]} />

@@ -5,6 +5,15 @@ import type { Course, CourseLesson } from "@/modules/courses/types/course";
 export type ClassStatus = "active" | "inactive";
 export type ClassDeliveryMode = "physical" | "hybrid" | "online";
 
+export interface ClassScheduleTemplate {
+  id: number;
+  name: string;
+  days: number[];
+  starts_at: string;
+  ends_at: string;
+  status: ClassStatus;
+}
+
 export interface SchoolClass {
   id: number;
   name: string;
@@ -29,6 +38,13 @@ export interface SchoolClass {
   floor?: string | null;
   term?: string | null;
   time?: string | null;
+  timetable_sessions?: Array<{
+    id: number;
+    school_class_id: number;
+    day_of_week: number;
+    starts_at: string;
+    ends_at: string;
+  }>;
   lesson?: string | null;
   delivery_mode?: ClassDeliveryMode | null;
   teacher_id: number | null;
@@ -73,8 +89,9 @@ export interface ClassForm {
   building_id: string;
   floor_id: string;
   room_id: string;
-  term: string;
-  time: string;
+  schedule_days: number[];
+  starts_at: string;
+  ends_at: string;
   teacher_id: string;
   description: string;
   status: ClassStatus;

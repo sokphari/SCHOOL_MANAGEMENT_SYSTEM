@@ -81,7 +81,7 @@ export default function TeacherEditPage() {
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
             <AppInput containerClassName={fieldClass} label="User ID (optional)" name="user_id" type="number" value={form.user_id} onChange={handleChange} error={errors.user_id?.[0]} />
-            <AppInput containerClassName={fieldClass} label="Teacher code" name="teacher_code" value={form.teacher_code} onChange={handleChange} error={errors.teacher_code?.[0]} />
+            <AppInput containerClassName={fieldClass} label="Teacher code" name="teacher_code" value={form.teacher_code || ""} onChange={handleChange} error={errors.teacher_code?.[0]} />
             <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} error={errors.first_name?.[0]} />
             <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} error={errors.last_name?.[0]} />
             <AppSelect containerClassName={fieldClass} label="Gender" name="gender" value={form.gender} onChange={handleChange} placeholder="Select gender" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} error={errors.gender?.[0]} />

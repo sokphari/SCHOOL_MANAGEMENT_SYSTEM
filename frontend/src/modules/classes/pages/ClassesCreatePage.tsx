@@ -3,18 +3,23 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
-import { createClass } from "@/modules/classes/api/classApi.ts";
+import { createClass, getClassScheduleTemplates } from "@/modules/classes/api/classApi.ts";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { getTeachers } from "@/modules/teachers/api/teacherApi.ts";
 import { getBuildings } from "@/modules/locations/api/locationApi.ts";
 import { getCourses } from "@/modules/courses/api/courseApi.ts";
-import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
-import type { ClassForm, ClassPayload, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
+import ClassScheduleSelect from "@/modules/classes/components/ClassScheduleSelect";
+import type { ClassForm, ClassPayload, ClassScheduleTemplate, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
 import type { BuildingLocation } from "@/modules/locations/types/location";
 import type { Course } from "@/modules/courses/types/course";
 
 const fieldClass = "mb-0";
+
+const getCurrentAcademicYear = () => {
+  const year = new Date().getFullYear();
+  return `${year}-${year + 1}`;
+};
 
 export default function ClassCreatePage() {
   const navigate = useNavigate();
@@ -22,44 +27,91 @@ export default function ClassCreatePage() {
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [buildings, setBuildings] = useState<BuildingLocation[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ClassScheduleTemplate[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [optionsLoadErrors, setOptionsLoadErrors] = useState<string[]>([]);
+  const [optionsReloadKey, setOptionsReloadKey] = useState(0);
   const [form, setForm] = useState<ClassForm>({
-    name: "", course: "", lesson: "", course_id: "", lesson_id: "", delivery_mode: "physical", section: "", academic_year: "", building_id: "", floor_id: "", room_id: "", term: "", time: "", teacher_id: "", description: "", status: "active",
+    name: "", course: "", lesson: "", course_id: "", lesson_id: "", delivery_mode: "physical", section: "", academic_year: "", building_id: "", floor_id: "", room_id: "", schedule_days: [], starts_at: "", ends_at: "", teacher_id: "", description: "", status: "active",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ClassValidationErrors>({});
   const activeCourses = courses.filter((course) => course.status === "active");
+  const activeBuildings = buildings.filter((building) => building.status === "active");
+  const activeFloors = buildings.find((building) => building.id === Number(form.building_id))?.floors?.filter((floor) => floor.status === "active") || [];
+  const activeRooms = buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms?.filter((room) => room.status === "active") || [];
+  const requiredOptionLoadFailed = optionsLoadErrors.some((error) => error !== "Teacher list");
 
   useEffect(() => {
     let active = true;
-    Promise.all([
+    setOptionsLoading(true);
+    setOptionsLoadErrors([]);
+    Promise.allSettled([
       user?.role === "admin" ? getTeachers() : Promise.resolve(null),
       getBuildings(),
       getCourses(),
+      getClassScheduleTemplates(),
     ])
-      .then(([teacherResponse, buildingResponse, courseResponse]) => {
+      .then(([teacherResult, buildingResult, courseResult, scheduleResult]) => {
         if (!active) return;
-        setTeachers((teacherResponse?.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
-        setBuildings(buildingResponse.data || []);
-        setCourses(courseResponse.data || []);
+        const failures: string[] = [];
+
+        if (teacherResult.status === "fulfilled") {
+          setTeachers((teacherResult.value?.data.data || []).map((teacher) => ({ label: `${teacher.first_name} ${teacher.last_name}`, value: String(teacher.id) })));
+        } else {
+          failures.push("Teacher list");
+          console.error("Failed to load teachers", teacherResult.reason);
+        }
+
+        if (buildingResult.status === "fulfilled") setBuildings(Array.isArray(buildingResult.value.data) ? buildingResult.value.data : []);
+        else {
+          failures.push("Buildings");
+          console.error("Failed to load buildings", buildingResult.reason);
+        }
+
+        if (courseResult.status === "fulfilled") setCourses(Array.isArray(courseResult.value.data) ? courseResult.value.data : []);
+        else {
+          failures.push("Courses and lessons");
+          console.error("Failed to load courses", courseResult.reason);
+        }
+
+        if (scheduleResult.status === "fulfilled") setScheduleTemplates(Array.isArray(scheduleResult.value.data) ? scheduleResult.value.data : []);
+        else {
+          failures.push("Class schedules");
+          console.error("Failed to load class schedules", scheduleResult.reason);
+        }
+        setOptionsLoadErrors(failures);
       })
-      .catch((error) => console.error("Failed to load class options", error));
+      .finally(() => {
+        if (active) setOptionsLoading(false);
+      });
     return () => { active = false; };
-  }, [user?.role]);
+  }, [user?.role, optionsReloadKey]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.currentTarget;
     setForm((current) => {
       if (name === "course_id") {
         const course = courses.find((item) => String(item.id) === value);
-        return { ...current, course_id: value, course: course?.name || "", lesson_id: "", lesson: "" };
+        return { ...current, course_id: value, course: course?.name || "", name: course?.name || "", lesson_id: "", lesson: "" };
       }
       if (name === "lesson_id") {
         const lesson = courses.find((item) => String(item.id) === current.course_id)?.lessons?.find((item) => String(item.id) === value);
-        return { ...current, lesson_id: value, lesson: lesson?.name || "" };
+        return { ...current, lesson_id: value, lesson: lesson?.name || "", name: lesson?.name || current.course };
       }
       return { ...current, [name]: value, ...(name === "building_id" ? { floor_id: "", room_id: "" } : {}), ...(name === "floor_id" ? { room_id: "" } : {}) };
     });
     setErrors((current) => ({ ...current, [name]: undefined }));
+  };
+
+  const handleTermChange = (days: number[]) => {
+    setForm((current) => ({ ...current, schedule_days: days }));
+    setErrors((current) => ({ ...current, schedule_days: undefined }));
+  };
+
+  const handleTimeChange = (startsAt: string, endsAt: string) => {
+    setForm((current) => ({ ...current, starts_at: startsAt, ends_at: endsAt }));
+    setErrors((current) => ({ ...current, starts_at: undefined, ends_at: undefined }));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -67,7 +119,18 @@ export default function ClassCreatePage() {
     setLoading(true);
     setErrors({});
     try {
-      const payload: ClassPayload = { ...form, course_id: Number(form.course_id), lesson_id: Number(form.lesson_id), building_id: Number(form.building_id), floor_id: Number(form.floor_id), room_id: Number(form.room_id), teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
+      const payload: ClassPayload = {
+        ...form,
+        name: form.lesson || form.course,
+        section: "",
+        academic_year: getCurrentAcademicYear(),
+        course_id: Number(form.course_id),
+        lesson_id: Number(form.lesson_id),
+        building_id: Number(form.building_id),
+        floor_id: Number(form.floor_id),
+        room_id: Number(form.room_id),
+        teacher_id: form.teacher_id ? Number(form.teacher_id) : null,
+      };
       await createClass(payload);
       alert("Class created successfully");
       navigate("/admin/classes");
@@ -89,26 +152,24 @@ export default function ClassCreatePage() {
         </div>
 
         <div className="space-y-5 p-4 sm:p-5">
+          {optionsLoadErrors.length > 0 && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-200"><span>Could not load {optionsLoadErrors.join(", ")}. Check your connection and try again.</span><button type="button" onClick={() => setOptionsReloadKey((key) => key + 1)} className="rounded-md border border-rose-500/40 px-3 py-1.5 font-semibold hover:bg-rose-500/10">Retry</button></div>}
+          {optionsLoading && <p role="status" className="m-0 text-sm text-secondary">Loading courses, buildings, and class schedules…</p>}
           <section className="border-b border-border pb-5">
-            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Class details</h2><p className="mb-0 mt-1 text-xs text-secondary">Set the class name, course, lesson, section, delivery type, and academic year.</p></div>
+            <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Class details</h2><p className="mb-0 mt-1 text-xs text-secondary">Choose a course, lesson, and class type. The class name uses the selected lesson, and the academic year is assigned automatically.</p></div>
             <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Course" name="course_id" required value={form.course_id} onChange={handleChange} placeholder="Select course" options={activeCourses.map((course) => ({ label: `${course.name}${course.code ? ` · ${course.code}` : ""}`, value: String(course.id) }))} error={errors.course_id?.[0] || errors.course?.[0]} />{activeCourses.length === 0 && <p className="mt-1 text-[11px] text-muted">No active courses.{user?.role === "admin" && <> <Link to="/admin/courses/create" className="font-semibold text-brand-strong hover:underline">Create a course</Link></>}</p>}</div>
+              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Course" name="course_id" required disabled={optionsLoading || optionsLoadErrors.includes("Courses and lessons")} value={form.course_id} onChange={handleChange} placeholder={optionsLoading ? "Loading courses…" : "Select course"} options={activeCourses.map((course) => ({ label: `${course.name}${course.code ? ` · ${course.code}` : ""}`, value: String(course.id) }))} error={errors.course_id?.[0] || errors.course?.[0]} />{!optionsLoading && activeCourses.length === 0 && <p className="mt-1 text-[11px] text-muted">No active courses are available.{user?.role === "admin" && <> <Link to="/admin/courses/create" className="font-semibold text-brand-strong hover:underline">Create a course</Link></>}</p>}</div>
               <AppSelect containerClassName={fieldClass} label="Lesson" name="lesson_id" required disabled={!form.course_id} value={form.lesson_id} onChange={handleChange} placeholder="Select lesson" options={(courses.find((course) => String(course.id) === form.course_id)?.lessons || []).filter((lesson) => lesson.status === "active").map((lesson) => ({ label: lesson.lesson_number ? `${lesson.lesson_number}. ${lesson.name}` : lesson.name, value: String(lesson.id) }))} error={errors.lesson_id?.[0] || errors.lesson?.[0]} />
               <AppSelect containerClassName={fieldClass} label="Class type" name="delivery_mode" required value={form.delivery_mode} onChange={handleChange} placeholder="Select class type" options={[{ label: "Physical", value: "physical" }, { label: "Hybrid", value: "hybrid" }, { label: "Online", value: "online" }]} error={errors.delivery_mode?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Class name" name="name" value={form.name} onChange={handleChange} placeholder="e.g. PHP + Laravel" error={errors.name?.[0]} required />
-              <AppInput containerClassName={fieldClass} label="Section" name="section" value={form.section} onChange={handleChange} placeholder="e.g. A" error={errors.section?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Academic year" name="academic_year" value={form.academic_year} onChange={handleChange} placeholder="e.g. 2026–2027" error={errors.academic_year?.[0]} required />
             </div>
           </section>
 
           <section className="border-b border-border pb-5">
             <div className="mb-3 border-b border-border pb-2.5"><h2 className="m-0 text-sm font-bold text-primary">Schedule &amp; location</h2><p className="mb-0 mt-1 text-xs text-secondary">Choose where and when this class meets.</p></div>
             <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-              <AppSelect containerClassName={fieldClass} label="Building" name="building_id" required value={form.building_id} onChange={handleChange} placeholder="Select building" options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />
-              <AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" required value={form.floor_id} disabled={!form.building_id} onChange={handleChange} placeholder="Select floor" options={(buildings.find((building) => building.id === Number(form.building_id))?.floors || []).filter((floor) => floor.status === "active").map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />
-              <AppSelect containerClassName={fieldClass} label="Room" name="room_id" required value={form.room_id} disabled={!form.floor_id} onChange={handleChange} placeholder="Select room" options={(buildings.flatMap((building) => building.floors || []).find((floor) => floor.id === Number(form.floor_id))?.rooms || []).filter((room) => room.status === "active").map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />
-              <AppInput containerClassName={fieldClass} label="Term" name="term" value={form.term} onChange={handleChange} placeholder="e.g. Mon & Thu" error={errors.term?.[0]} required />
-              <AppInput containerClassName={fieldClass} label="Time" name="time" value={form.time} onChange={handleChange} placeholder="e.g. 09:00 AM – 10:30 AM" error={errors.time?.[0]} required />
+              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Building" name="building_id" required disabled={optionsLoading || optionsLoadErrors.includes("Buildings")} value={form.building_id} onChange={handleChange} placeholder={optionsLoading ? "Loading buildings…" : "Select building"} options={buildings.filter((building) => building.status === "active").map((building) => ({ label: building.name, value: String(building.id) }))} error={errors.building_id?.[0]} />{!optionsLoading && buildings.filter((building) => building.status === "active").length === 0 && <p className="mt-1 text-[11px] text-muted">No active buildings are available.{user?.role === "admin" && <> <Link to="/admin/facilities/buildings/create" className="font-semibold text-brand-strong hover:underline">Create a building</Link></>}</p>}</div>
+              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Floor" name="floor_id" required value={form.floor_id} disabled={!form.building_id} onChange={handleChange} placeholder="Select floor" options={activeFloors.map((floor) => ({ label: floor.name, value: String(floor.id) }))} error={errors.floor_id?.[0]} />{form.building_id && activeFloors.length === 0 && <p className="mt-1 text-[11px] text-muted">No active floors in this building. Add a floor in Facilities.</p>}</div>
+              <div className="min-w-0"><AppSelect containerClassName={fieldClass} label="Room" name="room_id" required value={form.room_id} disabled={!form.floor_id} onChange={handleChange} placeholder="Select room" options={activeRooms.map((room) => ({ label: room.name, value: String(room.id) }))} error={errors.room_id?.[0]} />{form.floor_id && activeRooms.length === 0 && <p className="mt-1 text-[11px] text-muted">No active rooms on this floor. Add a room in Facilities.</p>}</div>
+              <div className="sm:col-span-2 xl:col-span-3"><ClassScheduleSelect templates={scheduleTemplates} days={form.schedule_days} startsAt={form.starts_at} endsAt={form.ends_at} onDaysChange={handleTermChange} onTimeChange={handleTimeChange} errors={errors} disabled={optionsLoading || optionsLoadErrors.includes("Class schedules")} />{!optionsLoading && scheduleTemplates.filter((template) => template.status === "active").length === 0 && <p className="mt-1 text-[11px] text-muted">No active class schedules are available.{user?.role === "admin" && <> <Link to="/admin/timetable/templates" className="font-semibold text-brand-strong hover:underline">Create a schedule</Link></>}</p>}</div>
             </div>
           </section>
 
@@ -129,7 +190,7 @@ export default function ClassCreatePage() {
 
         <div className="flex flex-col-reverse gap-2 border-t border-border bg-app-bg/40 px-4 py-2.5 sm:flex-row sm:justify-end sm:px-5">
           <button type="button" onClick={() => navigate("/admin/classes")} className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-brand-soft">Cancel</button>
-          <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{loading ? "Saving…" : "Create class"}</button>
+          <button type="submit" disabled={loading || optionsLoading || requiredOptionLoadFailed || activeCourses.length === 0 || activeBuildings.length === 0 || scheduleTemplates.every((template) => template.status !== "active")} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{loading ? "Saving…" : "Create class"}</button>
         </div>
       </form>
     </div>

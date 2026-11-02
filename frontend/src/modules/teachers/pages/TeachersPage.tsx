@@ -73,7 +73,6 @@ export default function TeachersPage() {
 
   const columns: TeacherColumn[] = [
     { key: "row_number", title: "No.", render: (_row, index) => (pagination.current_page - 1) * PAGE_SIZE + index + 1 },
-    { key: "teacher_code", title: "Teacher code", render: (row) => <span className="font-semibold text-primary">{row.teacher_code || "—"}</span> },
     { key: "name", title: "Teacher", render: (row) => <span className="font-medium text-primary">{row.first_name} {row.last_name}</span> },
     {
       key: "gender", title: "Gender", render: (row) => (
@@ -117,7 +116,7 @@ export default function TeachersPage() {
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="grid grid-cols-1 gap-x-3 gap-y-0 border-b border-border px-4 py-3 sm:grid-cols-2 sm:px-5 xl:grid-cols-[minmax(240px,2fr)_1fr_1fr]">
-          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search by name, code, phone, or email" />
+          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search by name, phone, or email" />
           <AppSelect containerClassName="mb-0" name="status" value={filters.status} onChange={handleFilterChange} placeholder="All statuses" options={[{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} />
           <AppSelect containerClassName="mb-0" name="gender" value={filters.gender} onChange={handleFilterChange} placeholder="All genders" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
         </div>

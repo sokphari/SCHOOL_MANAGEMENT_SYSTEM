@@ -33,6 +33,8 @@ import GradeTermCreatePage from "@/modules/grades/pages/GradeTermCreatePage.tsx"
 import GradeTermPage from "@/modules/grades/pages/GradeTermPage.tsx";
 import TimetablePage from "@/modules/timetable/pages/TimetablePage.tsx";
 import TimetableFormPage from "@/modules/timetable/pages/TimetableFormPage.tsx";
+import ScheduleTemplatesPage from "@/modules/timetable/pages/ScheduleTemplatesPage.tsx";
+import ScheduleTemplateFormPage from "@/modules/timetable/pages/ScheduleTemplateFormPage.tsx";
 import AuditLogsPage from "@/modules/audit-logs/pages/AuditLogsPage.tsx";
 import SystemUsersPage from "@/modules/audit-logs/pages/SystemUsersPage.tsx";
 import SystemUserEditPage from "@/modules/audit-logs/pages/SystemUserEditPage.tsx";
@@ -238,6 +240,30 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin", "teacher"]} feature="timetable.view">
             <TimetablePage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable/templates",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <ScheduleTemplatesPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable/templates/create",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <ScheduleTemplateFormPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "timetable/templates/:id/edit",
+        element: (
+          <RoleRoute roles={["admin"]}>
+            <ScheduleTemplateFormPage />
           </RoleRoute>
         ),
       },

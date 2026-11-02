@@ -74,7 +74,7 @@ export interface StudentFilters {
 }
 
 export interface StudentForm {
-  student_code: string;
+  student_code?: string;
   first_name: string;
   last_name: string;
   gender: "" | StudentGender;

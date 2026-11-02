@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules\Class\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modules\Class\Requests\StoreSchoolClassRequest;
 use App\Http\Controllers\Modules\Class\Requests\UpdateSchoolClassRequest;
+use App\Http\Controllers\Modules\Timetable\Services\TimetableScheduleService;
 use App\Models\Building;
 use App\Models\Course;
 use App\Models\Floor;
@@ -61,22 +62,38 @@ class SchoolClassController extends Controller
         );
     }
 
-    public function store(StoreSchoolClassRequest $request)
+    public function store(StoreSchoolClassRequest $request, TimetableScheduleService $scheduleService)
     {
         $data = $request->validated();
-        if (auth()->user()?->role === 'teacher') {
-            $teacherId = Teacher::where('user_id', auth()->id())->value('id');
-            abort_unless($teacherId, 403, 'Your account is not linked to a teacher profile.');
-            $data['teacher_id'] = $teacherId;
-            $data['status'] = 'active';
-        }
-        $this->storeLocationNames($data);
-        $this->storeCourseLessonNames($data);
-        $schoolClass = SchoolClass::create($data);
+        $days = $data['schedule_days'];
+        $startsAt = $data['starts_at'];
+        $endsAt = $data['ends_at'];
+        unset($data['schedule_days'], $data['starts_at'], $data['ends_at']);
+        $data['term'] = $scheduleService->formatDays($days);
+        $data['time'] = $scheduleService->formatTime($startsAt, $endsAt);
+
+        $schoolClass = DB::transaction(function () use ($data, $days, $startsAt, $endsAt, $scheduleService) {
+            if (auth()->user()?->role === 'teacher') {
+                $teacherId = Teacher::where('user_id', auth()->id())->value('id');
+                abort_unless($teacherId, 403, 'Your account is not linked to a teacher profile.');
+                $data['teacher_id'] = $teacherId;
+                $data['status'] = 'active';
+            }
+            $this->storeLocationNames($data);
+            $this->storeCourseLessonNames($data);
+            // The create flow derives the class label from its selected lesson.
+            // Keep the stored name aligned with the course/lesson IDs even if a
+            // client submits stale or modified display text.
+            $data['name'] = $data['lesson'];
+            $schoolClass = SchoolClass::create($data);
+            $scheduleService->syncClassSchedule($schoolClass, $days, $startsAt, $endsAt);
+
+            return $schoolClass;
+        });
 
         return response()->json([
             'message' => 'Class created successfully',
-            'data' => $schoolClass->load(['courseRecord', 'lessonRecord']),
+            'data' => $schoolClass->load(['courseRecord', 'lessonRecord', 'timetableSessions']),
         ], 201);
     }
 
@@ -85,7 +102,7 @@ class SchoolClassController extends Controller
         $this->requireClassAccess($class);
 
         return response()->json(
-            $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation', 'courseRecord', 'lessonRecord'])
+            $class->load(['teacher', 'students', 'buildingLocation', 'floorLocation', 'roomLocation', 'courseRecord', 'lessonRecord', 'timetableSessions'])
         );
     }
 
@@ -102,21 +119,30 @@ class SchoolClassController extends Controller
         );
     }
 
-    public function update(UpdateSchoolClassRequest $request, SchoolClass $class)
+    public function update(UpdateSchoolClassRequest $request, SchoolClass $class, TimetableScheduleService $scheduleService)
     {
         $this->requireClassAccess($class);
         $data = $request->validated();
+        $days = $data['schedule_days'];
+        $startsAt = $data['starts_at'];
+        $endsAt = $data['ends_at'];
+        unset($data['schedule_days'], $data['starts_at'], $data['ends_at']);
+        $data['term'] = $scheduleService->formatDays($days);
+        $data['time'] = $scheduleService->formatTime($startsAt, $endsAt);
         if (auth()->user()?->role === 'teacher') {
             $data['teacher_id'] = Teacher::where('user_id', auth()->id())->value('id');
             $data['status'] = $class->status;
         }
-        $this->storeLocationNames($data);
-        $this->storeCourseLessonNames($data);
-        $class->update($data);
+        DB::transaction(function () use ($class, $data, $days, $startsAt, $endsAt, $scheduleService) {
+            $this->storeLocationNames($data);
+            $this->storeCourseLessonNames($data);
+            $class->update($data);
+            $scheduleService->syncClassSchedule($class->fresh(), $days, $startsAt, $endsAt);
+        });
 
         return response()->json([
             'message' => 'Class updated successfully',
-            'data' => $class->fresh()->load(['courseRecord', 'lessonRecord']),
+            'data' => $class->fresh()->load(['courseRecord', 'lessonRecord', 'timetableSessions']),
         ]);
     }
 

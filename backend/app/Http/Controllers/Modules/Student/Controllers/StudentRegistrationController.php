@@ -37,7 +37,7 @@ class StudentRegistrationController extends Controller
             abort_unless($token && ! $token->used_at && $token->expires_at->isFuture(), 422, 'This registration QR is invalid, expired, or already used. Please ask the school admin for a new QR code.');
 
             unset($data['registration_token']);
-            $registration = StudentRegistration::create($data);
+            $registration = StudentRegistration::create([...$data, 'status' => 'pending']);
             $token->update(['used_at' => now(), 'registration_id' => $registration->id]);
 
             return $registration;

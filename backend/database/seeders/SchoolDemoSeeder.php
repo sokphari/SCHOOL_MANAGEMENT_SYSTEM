@@ -3,8 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\Attendance;
+use App\Models\Building;
 use App\Models\Course;
+use App\Models\Floor;
 use App\Models\Lesson;
+use App\Models\Room;
 use App\Models\SchoolClass;
 use App\Models\Setting;
 use App\Models\Student;
@@ -103,6 +106,28 @@ class SchoolDemoSeeder extends Seeder
             $courses->push(['course' => $course, 'lessons' => $lessons]);
         }
 
+        $buildings = collect([
+            Building::updateOrCreate(['code' => 'BLD-A'], ['name' => 'Building A', 'description' => 'Demo school building A.', 'status' => 'active']),
+            Building::updateOrCreate(['code' => 'BLD-B'], ['name' => 'Building B', 'description' => 'Demo school building B.', 'status' => 'active']),
+        ]);
+        $floors = collect();
+        foreach ($buildings as $buildingIndex => $building) {
+            foreach ([0, 1] as $floorNumber) {
+                $floors->push(Floor::updateOrCreate(
+                    ['building_id' => $building->id, 'floor_number' => $floorNumber],
+                    ['name' => $floorNumber === 0 ? 'Ground Floor' : 'Floor 1', 'code' => sprintf('%s-F%d', chr(65 + $buildingIndex), $floorNumber), 'status' => 'active'],
+                ));
+            }
+        }
+        $rooms = collect();
+        for ($i = 1; $i <= 10; $i++) {
+            $floor = $floors[($i - 1) % $floors->count()];
+            $rooms->push(Room::updateOrCreate(
+                ['code' => sprintf('ROOM-%02d', $i)],
+                ['floor_id' => $floor->id, 'name' => sprintf('Room %02d', $i), 'room_type' => 'classroom', 'capacity' => 30, 'status' => 'active'],
+            ));
+        }
+
         $classes = collect();
         for ($i = 1; $i <= 10; $i++) {
             $catalogItem = $courses[($i - 1) % $courses->count()];
@@ -115,7 +140,12 @@ class SchoolDemoSeeder extends Seeder
                     'course_id' => $catalogItem['course']->id,
                     'lesson' => $lesson->name,
                     'lesson_id' => $lesson->id,
-                    'room' => sprintf('Room %02d', $i),
+                    'building_id' => $rooms[$i - 1]->floor->building_id,
+                    'floor_id' => $rooms[$i - 1]->floor_id,
+                    'room_id' => $rooms[$i - 1]->id,
+                    'building' => $rooms[$i - 1]->floor->building->name,
+                    'floor' => $rooms[$i - 1]->floor->name,
+                    'room' => $rooms[$i - 1]->name,
                     'teacher_id' => $teachers[$i - 1]->id,
                     'description' => "Demo class {$i}",
                     'status' => 'active',

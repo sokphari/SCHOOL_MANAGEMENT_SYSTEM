@@ -8,6 +8,7 @@ use App\Http\Controllers\Modules\Student\Requests\UpdateStudentRequest;
 use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
@@ -49,12 +50,23 @@ class StudentController extends Controller
     public function store(StoreStudentRequest $request)
     {
         $this->requireAdmin();
-        $student = Student::create($request->validated());
+        $data = $request->validated();
+        $data['student_code'] ??= $this->generateStudentCode();
+        $student = Student::create($data);
 
         return response()->json([
             'message' => 'Student created successfully',
             'data' => $student,
         ], 201);
+    }
+
+    private function generateStudentCode(): string
+    {
+        do {
+            $code = 'STU-'.now()->format('Y').'-'.Str::upper(Str::random(6));
+        } while (Student::where('student_code', $code)->exists());
+
+        return $code;
     }
 
     public function show(Student $student)

@@ -10,7 +10,7 @@ import type { TeacherForm, TeacherPayload, TeacherValidationErrors } from "@/mod
 
 const fieldClass = "mb-0";
 const initialForm: TeacherForm = {
-  user_id: "", teacher_code: "", first_name: "", last_name: "", gender: "", phone: "", email: "", address: "", hire_date: "", status: "active",
+  user_id: "", first_name: "", last_name: "", gender: "", phone: "", email: "", address: "", hire_date: "", status: "active",
 };
 
 export default function TeacherCreatePage() {
@@ -60,7 +60,6 @@ export default function TeacherCreatePage() {
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
             <div className="min-w-0"><AppInput containerClassName={fieldClass} label="Linked teacher account ID (optional)" name="user_id" type="number" value={form.user_id} onChange={handleChange} placeholder="Existing teacher account ID" error={errors.user_id?.[0]} /><p className="mb-0 mt-1 text-[11px] text-muted">Only fill this in if the teacher login account already exists.</p></div>
-            <AppInput containerClassName={fieldClass} label="Teacher code" name="teacher_code" value={form.teacher_code} onChange={handleChange} placeholder="e.g. T001" error={errors.teacher_code?.[0]} required />
             <AppInput containerClassName={fieldClass} label="First name" name="first_name" value={form.first_name} onChange={handleChange} placeholder="Enter first name" error={errors.first_name?.[0]} required />
             <AppInput containerClassName={fieldClass} label="Last name" name="last_name" value={form.last_name} onChange={handleChange} placeholder="Enter last name" error={errors.last_name?.[0]} required />
             <AppSelect containerClassName={fieldClass} label="Gender" name="gender" value={form.gender} onChange={handleChange} placeholder="Select gender" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} error={errors.gender?.[0]} />
