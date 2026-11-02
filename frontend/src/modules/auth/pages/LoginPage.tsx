@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faEye, faEyeSlash, faLock, faMoon, faSchool, faShieldHalved, faSpinner, faSun, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { csrfCookieApi, registerStaffAccount, requestPasswordReset, resetPassword } from "@/modules/auth/api/authApi.jsx";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import LanguageSwitcher from "@/shared/i18n/LanguageSwitcher";
 
 interface LoginCredentials {
   name: string;
@@ -31,6 +33,7 @@ function getLoginError(error: unknown) {
 }
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,14 +105,14 @@ export default function LoginPage() {
     else if (view === "reset") navigate("/admin/login", { replace: true });
   };
 
-  const title = view === "register" ? "Request a teacher account" : view === "forgot" ? "Forgot your password?" : view === "reset" ? "Choose a new password" : "Welcome back";
+  const title = view === "register" ? t("auth.requestAccess") : view === "forgot" ? t("auth.forgotPassword") : view === "reset" ? t("auth.newPassword") : t("auth.welcomeBack");
   const subtitle = view === "register"
     ? "Create a request. An administrator must approve it before you can sign in."
     : view === "forgot"
       ? "Enter your account email and we’ll send reset instructions if it is registered."
       : view === "reset"
         ? "Use the new password for your school account."
-        : "Enter your account details to access your workspace.";
+        : t("auth.accountDetails");
 
   return (
     <main data-theme={theme} className="login-shell grid min-h-screen bg-app-bg text-primary transition-colors duration-200 lg:grid-cols-[minmax(0,1.05fr)_minmax(520px,0.95fr)]">
@@ -132,13 +135,16 @@ export default function LoginPage() {
       </section>
 
       <section className="relative flex min-h-screen flex-col px-5 py-6 sm:px-10 lg:items-center lg:justify-center lg:px-12">
-        <button type="button" aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${theme === "light" ? "dark" : "light"} mode`} onClick={() => setTheme((current) => current === "light" ? "dark" : "light")} className="absolute right-5 top-5 grid size-10 place-items-center rounded-xl border border-border bg-surface text-secondary shadow-sm transition hover:bg-brand-soft hover:text-brand-strong sm:right-8 sm:top-7"><FontAwesomeIcon icon={theme === "light" ? faMoon : faSun} /></button>
-        <Link to="/" className="mb-8 inline-flex w-fit items-center gap-2 pr-12 text-sm font-semibold text-secondary no-underline transition hover:text-brand-strong lg:hidden"><FontAwesomeIcon icon={faArrowLeft} />Back to home</Link>
+        <div className="absolute right-5 top-5 flex gap-2 sm:right-8 sm:top-7">
+          <LanguageSwitcher />
+          <button type="button" aria-label={t(theme === "light" ? "app.switchToDark" : "app.switchToLight")} title={t(theme === "light" ? "app.switchToDark" : "app.switchToLight")} onClick={() => setTheme((current) => current === "light" ? "dark" : "light")} className="grid size-10 place-items-center rounded-xl border border-border bg-surface text-secondary shadow-sm transition hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={theme === "light" ? faMoon : faSun} /></button>
+        </div>
+        <Link to="/" className="mb-8 inline-flex w-fit items-center gap-2 pr-12 text-sm font-semibold text-secondary no-underline transition hover:text-brand-strong lg:hidden"><FontAwesomeIcon icon={faArrowLeft} />{t("auth.backHome")}</Link>
         <div className="mx-auto w-full max-w-[560px]">
-          <Link to="/" className="mb-8 hidden w-fit items-center gap-2 text-sm font-semibold text-secondary no-underline transition hover:text-brand-strong lg:inline-flex"><FontAwesomeIcon icon={faArrowLeft} />Back to home</Link>
+          <Link to="/" className="mb-8 hidden w-fit items-center gap-2 text-sm font-semibold text-secondary no-underline transition hover:text-brand-strong lg:inline-flex"><FontAwesomeIcon icon={faArrowLeft} />{t("auth.backHome")}</Link>
           <div className="mb-7">
             <span className="mb-5 grid size-12 place-items-center rounded-2xl bg-brand-soft text-lg text-brand lg:hidden"><FontAwesomeIcon icon={faSchool} /></span>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">School account</p>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">{t("auth.schoolAccount")}</p>
             <h2 className="m-0 text-3xl font-bold tracking-tight text-primary">{title}</h2>
             <p className="mb-0 mt-2 text-sm text-secondary">{subtitle}</p>
           </div>
@@ -148,33 +154,33 @@ export default function LoginPage() {
             {success && <div role="status" className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-3 text-sm text-emerald-700 dark:text-emerald-300">{success}</div>}
 
             {view === "register" && <div className="mb-5">
-              <label htmlFor="register-name" className="mb-1.5 block text-[13px] font-semibold text-secondary">Full name</label>
+              <label htmlFor="register-name" className="mb-1.5 block text-[13px] font-semibold text-secondary">{t("auth.fullName")}</label>
               <input id="register-name" name="name" autoComplete="name" required value={form.name} onChange={handleFieldChange("name")} placeholder="Your full name" className="w-full rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
             </div>}
 
             <div className="mb-5">
-              <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-secondary">Email address</label>
+              <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-secondary">{t("auth.email")}</label>
               <input id="login-email" name="email" type="email" autoComplete="username" autoFocus={view === "login" || view === "forgot"} required value={form.email} onChange={handleFieldChange("email")} placeholder="you@school.com" className="w-full rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
             </div>
 
             {view !== "forgot" && <div className="mb-5">
-              <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-secondary">{view === "login" ? "Password" : "New password"}</label>
+              <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-secondary">{view === "login" ? t("auth.password") : t("auth.newPassword")}</label>
               <div className="relative">
                 <FontAwesomeIcon icon={faLock} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-muted" />
                 <input id="login-password" name="password" type={showPassword ? "text" : "password"} autoComplete={view === "login" ? "current-password" : "new-password"} minLength={8} required value={form.password} onChange={handleFieldChange("password")} placeholder={view === "login" ? "Enter your password" : "At least 8 characters"} className="w-full rounded-lg border border-border bg-surface py-3.5 pl-10 pr-12 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
-                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted transition hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} /></button>
+                <button type="button" aria-label={t(showPassword ? "auth.hidePassword" : "auth.showPassword")} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted transition hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} /></button>
               </div>
             </div>}
 
             {(view === "register" || view === "reset") && <div className="mb-7">
-              <label htmlFor="password-confirmation" className="mb-1.5 block text-[13px] font-semibold text-secondary">Confirm password</label>
+              <label htmlFor="password-confirmation" className="mb-1.5 block text-[13px] font-semibold text-secondary">{t("auth.confirmPassword")}</label>
               <input id="password-confirmation" name="password_confirmation" type="password" autoComplete="new-password" minLength={8} required value={form.password_confirmation} onChange={handleFieldChange("password_confirmation")} placeholder="Enter the password again" className="w-full rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] text-primary outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" />
             </div>}
 
-            {view === "login" && <div className="-mt-2 mb-5 text-right"><button type="button" onClick={() => changeView("forgot")} className="text-xs font-semibold text-brand-strong hover:underline">Forgot password?</button></div>}
-            <button type="submit" disabled={submitting || !form.email || (view !== "forgot" && !form.password) || (view === "register" && !form.name) || ((view === "register" || view === "reset") && !form.password_confirmation)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">{submitting && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}{submitting ? "Please wait…" : view === "login" ? "Sign in" : view === "register" ? "Send registration request" : view === "forgot" ? "Send reset link" : "Reset password"}</button>
-            {view === "login" ? <p className="mb-0 mt-5 text-center text-sm text-secondary">Need an account? <button type="button" onClick={() => changeView("register")} className="font-semibold text-brand-strong hover:underline">Request teacher access</button></p> : <p className="mb-0 mt-5 text-center text-sm"><button type="button" onClick={() => changeView("login")} className="font-semibold text-brand-strong hover:underline">Back to sign in</button></p>}
-            {view === "login" && <p className="mb-0 mt-3 text-center text-xs text-muted">New teacher accounts require administrator approval.</p>}
+            {view === "login" && <div className="-mt-2 mb-5 text-right"><button type="button" onClick={() => changeView("forgot")} className="text-xs font-semibold text-brand-strong hover:underline">{t("auth.forgotPassword")}</button></div>}
+            <button type="submit" disabled={submitting || !form.email || (view !== "forgot" && !form.password) || (view === "register" && !form.name) || ((view === "register" || view === "reset") && !form.password_confirmation)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">{submitting && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}{submitting ? t("auth.pleaseWait") : view === "login" ? t("auth.signIn") : view === "register" ? t("auth.sendRegistration") : view === "forgot" ? t("auth.sendReset") : t("auth.resetPassword")}</button>
+            {view === "login" ? <p className="mb-0 mt-5 text-center text-sm text-secondary">{t("auth.needAccount")} <button type="button" onClick={() => changeView("register")} className="font-semibold text-brand-strong hover:underline">{t("auth.requestAccess")}</button></p> : <p className="mb-0 mt-5 text-center text-sm"><button type="button" onClick={() => changeView("login")} className="font-semibold text-brand-strong hover:underline">{t("auth.backToSignIn")}</button></p>}
+            {view === "login" && <p className="mb-0 mt-3 text-center text-xs text-muted">{t("auth.approvalNote")}</p>}
           </form>
         </div>
       </section>

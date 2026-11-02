@@ -7,10 +7,13 @@ import { createStudent } from "@/modules/students/api/studentApi.ts";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { StudentForm, StudentValidationErrors } from "@/modules/students/types/student";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 const fieldClass = "mb-0";
 
 export default function StudentCreatePage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [form, setForm] = useState<StudentForm>({
     first_name: "", last_name: "", gender: "", date_of_birth: "",
@@ -52,7 +55,7 @@ export default function StudentCreatePage() {
       <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex items-center gap-3 border-b border-border bg-gradient-to-r from-brand-soft/70 via-brand-soft/30 to-transparent px-4 py-2.5 sm:px-6">
           <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand text-xl text-white shadow-md shadow-brand/20"><FontAwesomeIcon icon={faUserPlus} /></div>
-          <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">Student record</p><h1 className="m-0 text-xl font-bold text-primary sm:text-2xl">Create student</h1><p className="mb-0 mt-1 text-sm text-secondary">Enter the student's personal and enrollment information.</p></div>
+          <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">{t("students.directory")}</p><h1 className="m-0 text-xl font-bold text-primary sm:text-2xl">{t("form.createStudent")}</h1><p className="mb-0 mt-1 text-sm text-secondary">{t("form.studentDescription")}</p></div>
         </div>
 
         <div className="space-y-4 p-4 sm:p-5">
@@ -78,8 +81,8 @@ export default function StudentCreatePage() {
         </div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-border bg-app-bg/40 px-4 py-2.5 sm:flex-row sm:justify-end sm:px-5">
-          <button type="button" onClick={() => navigate("/admin/students")} className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-brand-soft">Cancel</button>
-          <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{loading ? "Saving…" : "Create student"}</button>
+          <button type="button" onClick={() => navigate("/admin/students")} className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-brand-soft">{t("common.cancel")}</button>
+          <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{loading ? t("form.saving") : t("form.createStudent")}</button>
         </div>
       </form>
     </div>
@@ -87,9 +90,10 @@ export default function StudentCreatePage() {
 }
 
 function FormSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5">
-      <div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div>
+      <div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{translateUiText(title, t)}</h2><p className="mb-0 mt-1 text-xs text-secondary">{translateUiText(description, t)}</p></div>
       <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );

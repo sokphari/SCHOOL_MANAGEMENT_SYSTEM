@@ -1,16 +1,18 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import type { RequestStats } from "@/modules/dashboard/types/dashboard";
+import { useI18n } from "@/shared/i18n/I18nProvider";
 
 interface RequestChartProps {
   stats: RequestStats;
 }
 
 export default function RequestChart({ stats }: RequestChartProps) {
+  const { t } = useI18n();
   const data = [
-    { name: "Pending", value: stats.pending },
-    { name: "In Progress", value: stats.in_progress },
-    { name: "Resolved", value: stats.resolved },
-    { name: "Rejected", value: stats.rejected },
+    { name: t("chart.pending"), value: stats.pending },
+    { name: t("chart.inProgress"), value: stats.in_progress },
+    { name: t("chart.resolved"), value: stats.resolved },
+    { name: t("chart.rejected"), value: stats.rejected },
   ];
 
   return (

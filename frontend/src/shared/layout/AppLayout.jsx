@@ -5,6 +5,8 @@ import { faArrowRightFromBracket, faBars, faChevronDown, faMoon, faSun, faXmark 
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import NotificationBell from "@/modules/student-requests/components/NotificationBell";
 import Sidebar from "@/shared/layout/Sidebar";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import LanguageSwitcher from "@/shared/i18n/LanguageSwitcher";
 
 const THEME_STORAGE_KEY = "school-management-theme";
 
@@ -14,6 +16,7 @@ function getInitialTheme() {
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const { language, t } = useI18n();
   const [theme, setTheme] = useState(getInitialTheme);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -64,7 +67,7 @@ export default function AppLayout() {
         <button
           className="fixed inset-0 z-30 border-0 bg-black/55 backdrop-blur-sm lg:hidden"
           type="button"
-          aria-label="Close navigation menu"
+          aria-label={t("app.closeNavigation")}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -75,16 +78,16 @@ export default function AppLayout() {
             <button
               className="grid size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong lg:hidden max-[560px]:size-[35px]"
               type="button"
-              aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-label={sidebarOpen ? t("app.closeNavigation") : t("app.openNavigation")}
               onClick={() => setSidebarOpen((isOpen) => !isOpen)}
             >
               <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
             </button>
             <div>
-              <p className="mb-1 text-[9px] font-bold tracking-[1.35px] text-brand max-[560px]:hidden">SCHOOL MANAGEMENT</p>
-              <h1 className="m-0 text-base font-bold tracking-tight text-primary max-[560px]:text-sm">School dashboard</h1>
+              <p className="mb-1 text-[9px] font-bold tracking-[1.35px] text-brand max-[560px]:hidden">{t("app.schoolManagement")}</p>
+              <h1 className="m-0 text-base font-bold tracking-tight text-primary max-[560px]:text-sm">{t("app.schoolDashboard")}</h1>
               <p className="mt-[3px] text-[11px] text-muted max-[560px]:hidden">
-                {new Date().toLocaleDateString("en-US", {
+                {new Date().toLocaleDateString(language === "km" ? "km-KH" : "en-US", {
                   weekday: "long",
                   month: "long",
                   day: "numeric",
@@ -97,14 +100,15 @@ export default function AppLayout() {
           <div className="flex items-center gap-[13px] max-[560px]:gap-[7px]">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-[11px] py-2 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-300 max-[560px]:hidden">
               <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(85,214,160,0.12)]" />
-              Live
+              {t("app.live")}
             </span>
             {user?.role === "admin" && <NotificationBell />}
+            <LanguageSwitcher />
             <button
               className="grid size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong max-[560px]:size-[35px]"
               type="button"
-              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              aria-label={t(theme === "light" ? "app.switchToDark" : "app.switchToLight")}
+              title={t(theme === "light" ? "app.switchToDark" : "app.switchToLight")}
               onClick={toggleTheme}
             >
               <FontAwesomeIcon icon={theme === "light" ? faMoon : faSun} />
@@ -113,7 +117,7 @@ export default function AppLayout() {
               <button
                 ref={profileButtonRef}
                 type="button"
-                aria-label="Open profile menu"
+                aria-label={t("app.profileMenu")}
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
                 onClick={() => setProfileOpen((open) => !open)}
@@ -131,7 +135,7 @@ export default function AppLayout() {
                 <div role="menu" aria-label="Profile options" className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-surface p-1.5 shadow-xl shadow-black/20">
                   <div className="border-b border-border px-3 py-2.5">
                     <p className="m-0 truncate text-sm font-semibold text-primary">{user?.name || "School user"}</p>
-                    <p className="mb-0 mt-1 text-[10px] uppercase tracking-wide text-muted">{user?.role || "Member"} account</p>
+                    <p className="mb-0 mt-1 text-[10px] uppercase tracking-wide text-muted">{user?.role || t("app.member")} {t("app.account")}</p>
                   </div>
                   <button
                     type="button"
@@ -140,7 +144,7 @@ export default function AppLayout() {
                     className="mt-1 flex min-h-10 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-500/10 dark:text-rose-300"
                   >
                     <FontAwesomeIcon icon={faArrowRightFromBracket} />
-                    <span>Sign out</span>
+                    <span>{t("app.signOut")}</span>
                   </button>
                 </div>
               )}

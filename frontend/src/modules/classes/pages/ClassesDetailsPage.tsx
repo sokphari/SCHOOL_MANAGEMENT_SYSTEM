@@ -12,16 +12,18 @@ import type { ClassDetails } from "@/modules/classes/api/classApi.ts";
 import type { ClassStudent } from "@/modules/classes/types/class";
 import type { SchoolClass } from "@/modules/classes/types/class";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 type ClassAttendanceStatus = "present" | "absent" | "late" | "excused";
 function isClassAttendanceClosed(schoolClass: ClassDetails | null) {
   return !schoolClass || schoolClass.status !== "active" || Boolean(schoolClass.pre_end_at) || Boolean(schoolClass.end_date && schoolClass.end_date < getLocalDateString());
 }
-const attendanceOptions: { value: ClassAttendanceStatus; label: string; activeClass: string }[] = [
-  { value: "present", label: "Present", activeClass: "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200" },
-  { value: "absent", label: "Absent", activeClass: "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-950/70 dark:text-rose-200" },
-  { value: "excused", label: "Permission", activeClass: "border-indigo-300 bg-indigo-100 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200" },
-  { value: "late", label: "Late", activeClass: "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950/70 dark:text-amber-200" },
+const attendanceOptions: { value: ClassAttendanceStatus; idleClass: string; activeClass: string }[] = [
+  { value: "present", idleClass: "border-emerald-300/70 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800/80 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/60", activeClass: "border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-950/15 ring-2 ring-emerald-500/20 dark:border-emerald-500 dark:bg-emerald-500 dark:text-emerald-950" },
+  { value: "absent", idleClass: "border-rose-300/70 bg-rose-50 text-rose-800 hover:bg-rose-100 dark:border-rose-800/80 dark:bg-rose-950/30 dark:text-rose-200 dark:hover:bg-rose-950/60", activeClass: "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-950/15 ring-2 ring-rose-500/20 dark:border-rose-500 dark:bg-rose-500 dark:text-rose-950" },
+  { value: "excused", idleClass: "border-indigo-300/70 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800/80 dark:bg-indigo-950/30 dark:text-indigo-200 dark:hover:bg-indigo-950/60", activeClass: "border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-950/15 ring-2 ring-indigo-500/20 dark:border-indigo-500 dark:bg-indigo-500 dark:text-indigo-950" },
+  { value: "late", idleClass: "border-amber-300/70 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-800/80 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/60", activeClass: "border-amber-500 bg-amber-500 text-amber-950 shadow-md shadow-amber-950/15 ring-2 ring-amber-500/20 dark:border-amber-400 dark:bg-amber-400 dark:text-amber-950" },
 ];
 
 function getLocalDateString() {
@@ -36,6 +38,7 @@ export default function ClassDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const canRecordAttendance = user?.role === "admin" || Boolean(user?.feature_permissions?.includes("attendance.record"));
   const [classData, setClassData] = useState<ClassDetails | null>(null);
   const [students, setStudents] = useState<ClassStudent[]>([]);
@@ -194,21 +197,21 @@ export default function ClassDetailPage() {
     }
   };
 
-  if (loading) return <div className="grid min-h-56 place-items-center text-sm text-secondary"><span className="flex items-center gap-2"><span className="size-4 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />Loading class details…</span></div>;
-  if (error || !classData) return <section className="rounded-2xl border border-border bg-surface p-8 text-center shadow-card"><p className="m-0 font-semibold text-primary">Unable to load class</p><button onClick={() => navigate("/admin/classes")} className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong">Back to classes</button></section>;
+  if (loading) return <div className="grid min-h-56 place-items-center text-sm text-secondary"><span className="flex items-center gap-2"><span className="size-4 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />{t("classes.loadingDetails")}</span></div>;
+  if (error || !classData) return <section className="rounded-2xl border border-border bg-surface p-8 text-center shadow-card"><p className="m-0 font-semibold text-primary">{t("classes.unableToLoad")}</p><button onClick={() => navigate("/admin/classes")} className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong">{t("classes.backToClasses")}</button></section>;
 
   const attendanceClosed = isClassAttendanceClosed(classData);
   const attendanceClosedMessage = classData.pre_end_at
-    ? "Attendance tracking is stopped because this class is in Pre-End."
+    ? t("classes.attendancePreEnd")
     : classData.end_date && classData.end_date < getLocalDateString()
       ? `Attendance tracking ended on ${classData.end_date}.`
-      : "Attendance tracking is unavailable because this class is inactive.";
+      : t("classes.attendanceInactive");
 
   const studentColumns: AppTableColumn<ClassStudent>[] = [
     { key: "row_number", title: "No.", render: (_student, index) => index + 1 },
     { key: "student_code", title: "Student code", render: (student) => <span className="inline-flex rounded-md border border-brand/15 bg-brand-soft px-2 py-1 text-xs font-semibold text-brand-strong">{student.student_code || "—"}</span> },
     { key: "name", title: "Student", render: (student) => <span className="font-medium text-primary">{student.first_name} {student.last_name}</span> },
-    { key: "gender", title: "Gender", render: (student) => <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${student.gender === "male" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : student.gender === "female" ? "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}>{student.gender || "—"}</span> },
+    { key: "gender", title: "Gender", render: (student) => <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${student.gender === "male" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : student.gender === "female" ? "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}>{translateUiText(student.gender || "—", t)}</span> },
     { key: "phone", title: "Phone", render: (student) => student.phone || "—" },
     { key: "pivot", title: "Joined", render: (student) => student.pivot?.joined_at || "—" },
     {
@@ -220,7 +223,8 @@ export default function ClassDetailPage() {
             const selected = (attendanceByStudent[student.id] ?? "present") === option.value;
             const permissionUnavailable = option.value === "excused" && user?.role === "teacher" && permissionAvailability[student.id] !== true;
             const permissionHint = permissionUnavailable ? "This student has already received permission this week" : "For an in-person request to Admin; one permission per student per week";
-            return <button key={option.value} type="button" aria-pressed={selected} title={option.value === "excused" ? permissionHint : option.label} disabled={!canRecordAttendance || !trackingAttendance || savingAttendance || permissionUnavailable || attendanceClosed} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-10 min-w-[78px] flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? option.activeClass : "border-border bg-surface text-secondary hover:border-brand/30 hover:bg-brand-soft"}`}>{option.label}</button>;
+            const translatedLabel = t(option.value === "excused" ? "attendance.permission" : `attendance.${option.value}`);
+            return <button key={option.value} type="button" aria-pressed={selected} title={option.value === "excused" ? permissionHint : translatedLabel} disabled={!canRecordAttendance || !trackingAttendance || savingAttendance || permissionUnavailable || attendanceClosed} onClick={() => handleAttendanceChange(student.id, option.value)} className={`min-h-11 min-w-[82px] flex-1 rounded-lg border px-2.5 py-2 text-[13px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 disabled:cursor-not-allowed disabled:opacity-50 ${selected ? option.activeClass : `${option.idleClass} hover:-translate-y-px`}`}>{translatedLabel}</button>;
           })}
         </div>
       ),
@@ -240,15 +244,15 @@ export default function ClassDetailPage() {
   return (
     <div className="mx-auto w-full max-w-[1800px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button onClick={() => navigate("/admin/classes")} className="inline-flex items-center gap-2 rounded-lg border border-brand/25 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand/15"><FontAwesomeIcon icon={faArrowLeft} /> Back to classes</button>
-        {user?.role === "admin" && <button onClick={() => navigate(`/admin/classes/${classData.id}/edit`)} className="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong"><FontAwesomeIcon icon={faPenToSquare} /> Edit class</button>}
+        <button onClick={() => navigate("/admin/classes")} className="inline-flex items-center gap-2 rounded-lg border border-brand/25 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-strong transition hover:bg-brand/15"><FontAwesomeIcon icon={faArrowLeft} /> {t("classes.backToClasses")}</button>
+        {user?.role === "admin" && <button onClick={() => navigate(`/admin/classes/${classData.id}/edit`)} className="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong"><FontAwesomeIcon icon={faPenToSquare} /> {t("classes.editClass")}</button>}
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex flex-wrap items-center gap-4 border-b border-border bg-gradient-to-r from-brand-soft/70 via-brand-soft/30 to-transparent px-5 py-5 sm:px-7">
           <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand text-xl text-white shadow-md shadow-brand/20"><FontAwesomeIcon icon={faBookOpen} /></div>
-          <div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">Class details</p><h1 className="m-0 break-words text-2xl font-bold tracking-tight text-primary sm:text-3xl">{classData.name}</h1><p className="mb-0 mt-1 text-sm text-secondary">Class ID: {classData.id}{classData.section ? ` · Section ${classData.section}` : ""}</p></div>
-          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${classData.pre_end_at ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200" : classData.end_date && classData.end_date < getLocalDateString() ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300" : classData.end_date ? "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200" : classData.status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}`}>{classData.pre_end_at ? "Pre-End" : classData.end_date && classData.end_date < getLocalDateString() ? "Ended" : classData.end_date ? `Ends ${classData.end_date}` : classData.status || "Unknown"}</span>
+          <div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">{t("form.classDetails")}</p><h1 className="m-0 break-words text-2xl font-bold tracking-tight text-primary sm:text-3xl">{classData.name}</h1><p className="mb-0 mt-1 text-sm text-secondary">{t("classes.classId", { id: classData.id })}{classData.section ? ` · ${t("classes.section")} ${classData.section}` : ""}</p></div>
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${classData.pre_end_at ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200" : classData.end_date && classData.end_date < getLocalDateString() ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300" : classData.end_date ? "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200" : classData.status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"}`}>{classData.pre_end_at ? t("classes.preEnd") : classData.end_date && classData.end_date < getLocalDateString() ? t("classes.ended") : classData.end_date ? t("classes.endsOn", { date: classData.end_date }) : translateUiText(classData.status || "Unknown", t)}</span>
         </div>
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
           <SummaryItem icon={faBookOpen} label="Course" value={classData.course_record?.name || classData.course || classData.name} />
@@ -264,7 +268,7 @@ export default function ClassDetailPage() {
           <SummaryItem icon={faUsers} label="Students" value={students.length} />
           {classData.end_date && <SummaryItem icon={faCalendarDays} label="End date" value={classData.end_date} />}
         </div>
-        {classData.description && <div className="border-t border-border px-5 py-4 sm:px-7"><p className="mb-1 text-xs font-semibold text-muted">Description</p><p className="m-0 whitespace-pre-wrap text-sm text-primary">{classData.description}</p></div>}
+        {classData.description && <div className="border-t border-border px-5 py-4 sm:px-7"><p className="mb-1 text-xs font-semibold text-muted">{t("form.description")}</p><p className="m-0 whitespace-pre-wrap text-sm text-primary">{classData.description}</p></div>}
       </section>
       {transferringStudent && <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingTransfer) setTransferringStudent(null); }}>
         <section role="dialog" aria-modal="true" aria-labelledby="transfer-student-title" className="w-full max-w-lg rounded-2xl border border-border bg-surface p-5 shadow-2xl sm:p-6">
@@ -281,7 +285,7 @@ export default function ClassDetailPage() {
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         {transferSuccess && <p role="status" aria-live="polite" className="m-4 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">{transferSuccess}</p>}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5">
-          <div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faUsers} /></span><div><h2 className="m-0 text-sm font-semibold text-primary">Students in this class</h2><p className="mb-0 mt-0.5 text-xs text-muted">{students.length} assigned {students.length === 1 ? "student" : "students"}</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faUsers} /></span><div><h2 className="m-0 text-sm font-semibold text-primary">{t("classes.studentsInClass")}</h2><p className="mb-0 mt-0.5 text-xs text-muted">{t("classes.assignedStudents", { count: students.length })}</p></div></div>
           <div className="flex items-center gap-2">
             {attendanceClosed && <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 text-sm font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><FontAwesomeIcon icon={faCalendarCheck} />Attendance closed</span>}
             {!attendanceClosed && trackingAttendance && <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3.5 text-sm font-semibold text-emerald-600 dark:text-emerald-300"><FontAwesomeIcon icon={faCalendarCheck} />Tracking active</span>}
@@ -290,12 +294,13 @@ export default function ClassDetailPage() {
           </div>
         </div>
         {attendanceClosed && <p className="m-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200 sm:px-5">{attendanceClosedMessage}</p>}
-        {students.length > 0 ? <AppTable columns={studentColumns} data={students} /> : <div className="grid min-h-44 place-items-center px-4 text-center"><div><span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-brand-soft text-brand"><FontAwesomeIcon icon={faUsers} /></span><p className="m-0 text-sm font-semibold text-primary">No students assigned yet</p></div></div>}
+        {students.length > 0 ? <AppTable columns={studentColumns} data={students} /> : <div className="grid min-h-44 place-items-center px-4 text-center"><div><span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-brand-soft text-brand"><FontAwesomeIcon icon={faUsers} /></span><p className="m-0 text-sm font-semibold text-primary">{t("classes.noStudentsAssigned")}</p></div></div>}
       </section>
     </div>
   );
 }
 
 function SummaryItem({ icon, label, value }: { icon: IconProp; label: string; value: ReactNode }) {
-  return <div className="flex min-h-[76px] items-center gap-3 rounded-xl border border-border bg-app-bg/50 p-3.5"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand"><FontAwesomeIcon icon={icon} /></span><div className="min-w-0"><p className="mb-1 text-xs text-muted">{label}</p><p className="m-0 truncate text-sm font-semibold text-primary">{value}</p></div></div>;
+  const { t } = useI18n();
+  return <div className="flex min-h-[76px] items-center gap-3 rounded-xl border border-border bg-app-bg/50 p-3.5"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand"><FontAwesomeIcon icon={icon} /></span><div className="min-w-0"><p className="mb-1 text-xs text-muted">{translateUiText(label, t)}</p><p className="m-0 truncate text-sm font-semibold text-primary">{typeof value === "string" ? translateUiText(value, t) : value}</p></div></div>;
 }

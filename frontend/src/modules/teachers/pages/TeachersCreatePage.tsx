@@ -7,6 +7,8 @@ import { createTeacher } from "@/modules/teachers/api/teacherApi.ts";
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { TeacherForm, TeacherPayload, TeacherValidationErrors } from "@/modules/teachers/types/teacher";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 const fieldClass = "mb-0";
 const initialForm: TeacherForm = {
@@ -14,6 +16,7 @@ const initialForm: TeacherForm = {
 };
 
 export default function TeacherCreatePage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [form, setForm] = useState<TeacherForm>(initialForm);
   const [saving, setSaving] = useState(false);
@@ -55,7 +58,7 @@ export default function TeacherCreatePage() {
       <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex items-center gap-3 border-b border-border bg-gradient-to-r from-brand-soft/70 via-brand-soft/30 to-transparent px-4 py-2.5 sm:px-6">
           <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand text-xl text-white shadow-md shadow-brand/20"><FontAwesomeIcon icon={faChalkboardUser} /></div>
-          <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">Teacher record</p><h1 className="m-0 text-xl font-bold text-primary sm:text-2xl">Create teacher</h1><p className="mb-0 mt-1 text-sm text-secondary">Add a teacher's personal and employment information.</p></div>
+          <div><p className="mb-1 text-[10px] font-bold uppercase tracking-[1.3px] text-brand">{t("teachers.directory")}</p><h1 className="m-0 text-xl font-bold text-primary sm:text-2xl">{t("form.createTeacher")}</h1><p className="mb-0 mt-1 text-sm text-secondary">{t("form.teacherDescription")}</p></div>
         </div>
         <div className="space-y-4 p-4 sm:p-5">
           <FormSection title="Personal information" description="Basic identity and contact details.">
@@ -73,8 +76,8 @@ export default function TeacherCreatePage() {
           </FormSection>
         </div>
         <div className="flex flex-col-reverse gap-2 border-t border-border bg-app-bg/40 px-4 py-2.5 sm:flex-row sm:justify-end sm:px-5">
-          <button type="button" onClick={() => navigate("/admin/teachers")} className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-brand-soft">Cancel</button>
-          <button type="submit" disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{saving ? "Saving…" : "Create teacher"}</button>
+          <button type="button" onClick={() => navigate("/admin/teachers")} className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-brand-soft">{t("common.cancel")}</button>
+          <button type="submit" disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"><FontAwesomeIcon icon={faFloppyDisk} />{saving ? t("form.saving") : t("form.createTeacher")}</button>
         </div>
       </form>
     </div>
@@ -82,5 +85,6 @@ export default function TeacherCreatePage() {
 }
 
 function FormSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5"><div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{title}</h2><p className="mb-0 mt-1 text-xs text-secondary">{description}</p></div><div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div></section>;
+  const { t } = useI18n();
+  return <section className="rounded-xl border border-border bg-app-bg/25 p-4 sm:p-5"><div className="mb-4 border-b border-border pb-3"><h2 className="m-0 text-sm font-bold text-primary">{translateUiText(title, t)}</h2><p className="mb-0 mt-1 text-xs text-secondary">{translateUiText(description, t)}</p></div><div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div></section>;
 }

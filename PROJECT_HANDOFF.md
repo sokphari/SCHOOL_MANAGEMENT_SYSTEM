@@ -900,3 +900,25 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
   admin and teacher accounts.
 - Added outside-click and Escape-key dismissal with focus returned to the
   profile button. No dependency was installed.
+
+## Follow-up — Khmer and English UI language support (2026-11-02)
+
+- Added a shared React i18n context and English/Khmer message dictionaries; the
+  selected language is saved in local storage and applied to the document's
+  `lang` attribute.
+- Added a language switcher to the signed-in header and login page. Sidebar
+  labels, navigation subsections, shared header/profile controls, dashboard
+  content and charts, student/teacher directory headings, class search filters,
+  attendance class selection and summary cards, and grades overview now use
+  translated strings.
+- Added Khmer-friendly system font fallbacks. No external i18n package or other
+  dependency was installed; package registry access was unavailable, so this
+  uses the app's shared i18n layer and can be extended by adding dictionary
+  entries and replacing remaining page text with translation keys.
+- The shared `AppInput` and `AppSelect` components now translate mapped labels,
+  placeholders, and option labels automatically. Student and teacher creation
+  forms also translate their section headings, descriptions, and submit/cancel
+  controls. The class creation form's course, lesson, class type, location,
+  schedule selectors, section headings, and controls use the same messages.
+- Shared table column headings and the empty-table message also use translated
+  labels; student/teacher gender and status badges are translated as well.

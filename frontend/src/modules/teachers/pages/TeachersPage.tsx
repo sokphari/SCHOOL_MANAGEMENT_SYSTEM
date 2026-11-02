@@ -8,6 +8,8 @@ import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
 import type { Teacher, TeacherFilters } from "@/modules/teachers/types/teacher";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 const PAGE_SIZE = 10;
 
@@ -24,6 +26,7 @@ interface TeacherColumn {
 }
 
 export default function TeachersPage() {
+  const { t } = useI18n();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({ current_page: 1, last_page: 1, total: 0 });
@@ -77,7 +80,7 @@ export default function TeachersPage() {
     {
       key: "gender", title: "Gender", render: (row) => (
         <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize ${row.gender === "male" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300"}`}>
-          {row.gender || "—"}
+          {translateUiText(row.gender || "—", t)}
         </span>
       ),
     },
@@ -86,7 +89,7 @@ export default function TeachersPage() {
     {
       key: "status", title: "Status", render: (row) => (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${row.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}>
-          <span className={`size-1.5 rounded-full ${row.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />{row.status || "—"}
+          <span className={`size-1.5 rounded-full ${row.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />{translateUiText(row.status || "—", t)}
         </span>
       ),
     },
@@ -107,9 +110,9 @@ export default function TeachersPage() {
     <div className="mx-auto w-full max-w-[1800px] space-y-4">
       <section className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">Staff directory</p>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Teachers</h1>
-          <p className="mb-0 mt-1 text-sm text-secondary">View and manage teacher records.</p>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">{t("teachers.directory")}</p>
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">{t("teachers.title")}</h1>
+          <p className="mb-0 mt-1 text-sm text-secondary">{t("teachers.description")}</p>
         </div>
         <button onClick={() => navigate("/admin/teachers/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong focus:outline-none focus:ring-2 focus:ring-brand/40"><FontAwesomeIcon icon={faPlus} /> Add teacher</button>
       </section>

@@ -9,6 +9,7 @@ import { getClasses, getClass } from "@/modules/classes/api/classApi.ts";
 import { bulkSaveAttendance, getAttendanceByClassAndDate, getTeacherPermissionAvailability, grantPermissionRange } from "@/modules/attendance/api/attendanceApi.ts";
 import type { AttendanceDraft, ClassAttendanceRecord } from "@/modules/attendance/types/attendance";
 import type { AttendanceStatus } from "@/modules/students/types/student";
+import { useI18n } from "@/shared/i18n/I18nProvider";
 import type { SchoolClass } from "@/modules/classes/types/class";
 import AppTable from "@/shared/components/AppTable.tsx";
 import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
@@ -38,6 +39,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function AttendancePage() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const canRecordAttendance = user?.role === "admin" || Boolean(user?.feature_permissions?.includes("attendance.record"));
@@ -267,26 +269,26 @@ export default function AttendancePage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">Daily records</p>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Attendance</h1>
-          <p className="mb-0 mt-1 text-sm text-secondary">Record and review attendance by class and date.</p>
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">{t("attendance.title")}</h1>
+          <p className="mb-0 mt-1 text-sm text-secondary">{t("attendance.description")}</p>
         </div>
         {selectedClassName && <span className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-strong"><FontAwesomeIcon icon={faBookOpen} />{selectedClassName}</span>}
       </header>
 
       <section aria-label="Attendance summary" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <SummaryCard label="Present" value={counts.present} icon={faCircleCheck} tone="emerald" />
-        <SummaryCard label="Absent" value={counts.absent} icon={faCircleXmark} tone="rose" />
-        <SummaryCard label="Permission" value={counts.excused} icon={faCheck} tone="indigo" />
-        <SummaryCard label="Late" value={counts.late} icon={faClock} tone="amber" />
+        <SummaryCard label={t("attendance.present")} value={counts.present} icon={faCircleCheck} tone="emerald" />
+        <SummaryCard label={t("attendance.absent")} value={counts.absent} icon={faCircleXmark} tone="rose" />
+        <SummaryCard label={t("attendance.permission")} value={counts.excused} icon={faCheck} tone="indigo" />
+        <SummaryCard label={t("attendance.late")} value={counts.late} icon={faClock} tone="amber" />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4 shadow-card sm:p-5">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faCalendarCheck} /></span>
-          <div><h2 className="m-0 text-sm font-semibold text-primary">Choose class</h2><p className="mb-0 mt-0.5 text-xs text-muted">Today’s student attendance loads automatically after you select a class.</p></div>
+          <div><h2 className="m-0 text-sm font-semibold text-primary">{t("attendance.chooseClass")}</h2><p className="mb-0 mt-0.5 text-xs text-muted">{t("attendance.autoLoad")}</p></div>
         </div>
         <div className="grid grid-cols-1 gap-3">
-          <SearchableSelect id="attendance-class" label="Class" searchPlaceholder="Search classes…" options={classOptions} value={selectedClass} onChange={handleClassChange} disabled={loadingClasses} />
+          <SearchableSelect id="attendance-class" label={t("attendance.class")} searchPlaceholder={t("attendance.searchClasses")} options={classOptions} value={selectedClass} onChange={handleClassChange} disabled={loadingClasses} />
         </div>
         <p aria-live="polite" className="mb-0 mt-3 min-h-4 text-xs text-muted">{loading ? "Loading attendance records…" : records.length ? `${records.length} students loaded` : selectedClass ? "No students found for this class and date." : "Select a class to load its students."}</p>
       </section>

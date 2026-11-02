@@ -26,6 +26,8 @@ import AppPagination from "@/shared/components/AppPagination.tsx";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
 import type { ClassFilters, SchoolClass } from "@/modules/classes/types/class";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 const PAGE_SIZE = 8;
 
@@ -44,6 +46,7 @@ function getTodayString() {
 }
 
 export default function ClassesPage() {
+  const { t } = useI18n();
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
@@ -263,7 +266,7 @@ export default function ClassesPage() {
       <section className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">Learning groups</p>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Classes</h1>
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">{t("classes.title")}</h1>
           <p className="mb-0 mt-1 text-sm text-secondary">View classes and manage teacher assignments.</p>
         </div>
         {(user?.role === "admin" || user?.feature_permissions?.includes("classes.create")) && <button onClick={() => navigate("/admin/classes/create")} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} /> Add class</button>}
@@ -273,8 +276,8 @@ export default function ClassesPage() {
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="grid grid-cols-1 gap-x-3 gap-y-0 border-b border-border px-4 py-3 sm:grid-cols-[minmax(240px,2fr)_1fr_auto] sm:items-center sm:px-5">
-          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search class, section, year, or room" />
-          <AppSelect containerClassName="mb-0" name="status" value={filters.status} onChange={handleFilterChange} placeholder="All statuses" options={[{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} />
+          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder={t("classes.search")} />
+          <AppSelect containerClassName="mb-0" name="status" value={filters.status} onChange={handleFilterChange} placeholder={t("students.statuses")} options={[{ label: t("common.active"), value: "active" }, { label: t("common.inactive"), value: "inactive" }]} />
           <div className="flex justify-end gap-1 rounded-lg border border-border bg-app-bg p-1">
             <button type="button" onClick={() => setViewMode("cards")} aria-label="Card view" aria-pressed={viewMode === "cards"} className={`grid size-9 place-items-center rounded-md transition ${viewMode === "cards" ? "bg-brand text-white shadow-sm" : "text-secondary hover:bg-brand-soft"}`}><FontAwesomeIcon icon={faGrip} /></button>
             <button type="button" onClick={() => setViewMode("table")} aria-label="Table view" aria-pressed={viewMode === "table"} className={`grid size-9 place-items-center rounded-md transition ${viewMode === "table" ? "bg-brand text-white shadow-sm" : "text-secondary hover:bg-brand-soft"}`}><FontAwesomeIcon icon={faTableList} /></button>
@@ -317,6 +320,7 @@ export default function ClassesPage() {
 
 interface ClassCardProps { classItem: SchoolClass; permissions: ClassActionPermissions; busy: boolean; onView: () => void; onAddStudent: () => void; onEdit: () => void; onSwitchTeacher: () => void; onEnd: () => void; onPreEnd: () => void; onResume: () => void }
 function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit, onSwitchTeacher, onEnd, onPreEnd, onResume }: ClassCardProps) {
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -337,7 +341,7 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
   const courseName = classItem.course_record?.name || classItem.course || classItem.name;
   const teacherName = classItem.teacher
     ? `${classItem.teacher.first_name} ${classItem.teacher.last_name}`.trim() || `Teacher ${classItem.teacher.id}`
-    : "Unassigned";
+    : t("form.unassigned");
   const hasAvailableActions = permissions.addStudents || permissions.switchTeacher || permissions.edit
     || permissions.scheduleEnd || permissions.preEnd || permissions.resume;
 
@@ -345,26 +349,26 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
     <article className="flex h-full flex-col rounded-xl border border-border bg-surface-raised p-4 transition hover:border-brand/30 hover:shadow-card">
       <div className="mb-3 flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faBookOpen} /></span>
-        <div className="min-w-0 flex-1"><h2 className="m-0 truncate text-base font-semibold text-primary" title={courseName}><TagBadge tone="purple">{courseName}</TagBadge></h2><p className="mb-0 mt-1 truncate text-xs text-secondary"> ID: <span className="font-semibold text-brand">{classItem.id}</span></p></div>
+        <div className="min-w-0 flex-1"><h2 className="m-0 truncate text-base font-semibold text-primary" title={courseName}><TagBadge tone="purple">{courseName}</TagBadge></h2><p className="mb-0 mt-1 truncate text-xs text-secondary">{t("table.id")}: <span className="font-semibold text-brand">{classItem.id}</span></p></div>
         <div className="relative flex shrink-0 items-center gap-1.5" ref={menuRef}>
           <StatusBadge classItem={classItem} />
-          {hasAvailableActions && <button type="button" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={`More actions for ${classItem.name}`} title="More actions" onClick={() => setMenuOpen((open) => !open)} className="grid size-8 place-items-center rounded-lg border border-transparent text-muted transition hover:border-border hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faEllipsisVertical} /></button>}
+          {hasAvailableActions && <button type="button" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={t("classes.moreActions", { name: classItem.name })} title={t("classes.moreActionsTitle")} onClick={() => setMenuOpen((open) => !open)} className="grid size-8 place-items-center rounded-lg border border-transparent text-muted transition hover:border-border hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faEllipsisVertical} /></button>}
           {hasAvailableActions && menuOpen && <div role="menu" className="absolute right-0 top-10 z-30 min-w-48 overflow-hidden rounded-xl border border-border bg-surface p-1.5 shadow-xl">
-            {permissions.addStudents && <MenuAction icon={<FontAwesomeIcon icon={faUserPlus} />} onClick={() => { setMenuOpen(false); onAddStudent(); }}>Add student</MenuAction>}
-            {permissions.switchTeacher && <MenuAction icon={<FontAwesomeIcon icon={faChalkboardUser} />} onClick={() => { setMenuOpen(false); onSwitchTeacher(); }}>Switch teacher</MenuAction>}
-            {permissions.edit && <MenuAction icon={<FontAwesomeIcon icon={faPenToSquare} />} onClick={() => { setMenuOpen(false); onEdit(); }}>Edit class</MenuAction>}
-            {permissions.scheduleEnd && !ended && <MenuAction icon={<FontAwesomeIcon icon={faCalendarDays} />} onClick={() => { setMenuOpen(false); onEnd(); }}>{classItem.end_date ? "Change end date" : "End class"}</MenuAction>}
-            {!ended && permissions.preEnd && <MenuAction icon={<FontAwesomeIcon icon={faClock} />} onClick={() => { setMenuOpen(false); onPreEnd(); }} disabled={busy}>Pre-End class</MenuAction>}
-            {ended && permissions.resume && <MenuAction icon={<FontAwesomeIcon icon={faBookOpen} />} onClick={() => { setMenuOpen(false); onResume(); }} disabled={busy}>Resume class</MenuAction>}
+            {permissions.addStudents && <MenuAction icon={<FontAwesomeIcon icon={faUserPlus} />} onClick={() => { setMenuOpen(false); onAddStudent(); }}>{t("classes.addStudent")}</MenuAction>}
+            {permissions.switchTeacher && <MenuAction icon={<FontAwesomeIcon icon={faChalkboardUser} />} onClick={() => { setMenuOpen(false); onSwitchTeacher(); }}>{t("classes.switchTeacher")}</MenuAction>}
+            {permissions.edit && <MenuAction icon={<FontAwesomeIcon icon={faPenToSquare} />} onClick={() => { setMenuOpen(false); onEdit(); }}>{t("classes.editClass")}</MenuAction>}
+            {permissions.scheduleEnd && !ended && <MenuAction icon={<FontAwesomeIcon icon={faCalendarDays} />} onClick={() => { setMenuOpen(false); onEnd(); }}>{t(classItem.end_date ? "classes.changeEndDate" : "classes.endClass")}</MenuAction>}
+            {!ended && permissions.preEnd && <MenuAction icon={<FontAwesomeIcon icon={faClock} />} onClick={() => { setMenuOpen(false); onPreEnd(); }} disabled={busy}>{t("classes.preEndClass")}</MenuAction>}
+            {ended && permissions.resume && <MenuAction icon={<FontAwesomeIcon icon={faBookOpen} />} onClick={() => { setMenuOpen(false); onResume(); }} disabled={busy}>{t("classes.resumeClass")}</MenuAction>}
           </div>}
         </div>
       </div>
       <dl className="mb-4 grid grid-cols-1 gap-0.5 text-sm">
-        <InfoRow label="Lesson" value={classItem.lesson_record?.name || classItem.lesson || "General studies"} />
-        <InfoRow label="Class type" value={<TagBadge tone={classItem.delivery_mode === "online" ? "blue" : classItem.delivery_mode === "hybrid" ? "purple" : "emerald"}>{classItem.delivery_mode || "Physical"}</TagBadge>} />
+        <InfoRow label="Lesson" value={classItem.lesson_record?.name || classItem.lesson || t("classes.generalStudies")} />
+        <InfoRow label="Class type" value={<TagBadge tone={classItem.delivery_mode === "online" ? "blue" : classItem.delivery_mode === "hybrid" ? "purple" : "emerald"}>{translateUiText(classItem.delivery_mode || "Physical", t)}</TagBadge>} />
         <InfoRow label="Academic year" value={classItem.academic_year || "—"} />
-        <InfoRow label="Students" value={<span className="inline-flex items-center gap-1.5"><span className="font-semibold text-brand">{classItem.students_count ?? 0}</span><span className="text-xs text-muted">enrolled</span></span>} />
-        <InfoRow label="Room" value={<span className="inline-flex items-center gap-1.5"><FontAwesomeIcon icon={faDoorOpen} className="text-xs text-brand" />{classItem.roomLocation?.name || classItem.room || "Not assigned"}</span>} />
+        <InfoRow label="Students" value={<span className="inline-flex items-center gap-1.5"><span className="font-semibold text-brand">{classItem.students_count ?? 0}</span><span className="text-xs text-muted">{t("classes.enrolled")}</span></span>} />
+        <InfoRow label="Room" value={<span className="inline-flex items-center gap-1.5"><FontAwesomeIcon icon={faDoorOpen} className="text-xs text-brand" />{classItem.roomLocation?.name || classItem.room || t("classes.notAssigned")}</span>} />
         <InfoRow label="Building" value={classItem.buildingLocation?.name || classItem.building || "—"} />
         <InfoRow label="Floor" value={classItem.floorLocation?.name || classItem.floor || "—"} />
         <InfoRow label="Term" value={classItem.term || "Term 1"} />
@@ -373,7 +377,7 @@ function ClassCard({ classItem, permissions, busy, onView, onAddStudent, onEdit,
         {classItem.end_date && <InfoRow label="End date" value={formatClassDate(classItem.end_date)} />}
       </dl>
       <div className="mt-auto flex items-center gap-2 border-t border-border pt-3">
-        <button type="button" onClick={onView} className="flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-brand-strong transition hover:border-brand/30 hover:bg-brand-soft"><FontAwesomeIcon icon={faEye} /> View class</button>
+        <button type="button" onClick={onView} className="flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-brand-strong transition hover:border-brand/30 hover:bg-brand-soft"><FontAwesomeIcon icon={faEye} /> {t("classes.viewClass")}</button>
       </div>
     </article>
   );
@@ -439,13 +443,15 @@ function AddStudentDialog({ className, search, gender, phone, loading, assigning
 }
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return <div className="grid grid-cols-[minmax(105px,0.8fr)_minmax(0,1.2fr)] gap-2 border-b border-border/70 py-2 last:border-0"><dt className="text-xs font-semibold text-secondary">{label}</dt><dd className="m-0 break-words text-sm text-primary">{value}</dd></div>;
+  const { t } = useI18n();
+  return <div className="grid grid-cols-[minmax(105px,0.8fr)_minmax(0,1.2fr)] gap-2 border-b border-border/70 py-2 last:border-0"><dt className="text-xs font-semibold text-secondary">{translateUiText(label, t)}</dt><dd className="m-0 break-words text-sm text-primary">{value}</dd></div>;
 }
 
 function StatusBadge({ classItem }: { classItem: SchoolClass }) {
+  const { t } = useI18n();
   const ended = isClassEnded(classItem);
   const preEnded = Boolean(classItem.pre_end_at);
-  const label = preEnded ? "Pre-End" : ended ? "Ended" : classItem.status === "inactive" ? "Inactive" : classItem.end_date ? `Ends ${formatClassDate(classItem.end_date)}` : "Active";
+  const label = preEnded ? t("classes.preEnd") : ended ? t("classes.ended") : classItem.status === "inactive" ? t("common.inactive") : classItem.end_date ? t("classes.endsOn", { date: formatClassDate(classItem.end_date) }) : t("common.active");
   const style = preEnded ? "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200" : ended || classItem.status === "inactive" ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" : classItem.end_date ? "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
   const dot = preEnded ? "bg-amber-500" : ended || classItem.status === "inactive" ? "bg-slate-400" : classItem.end_date ? "bg-sky-500" : "bg-emerald-500";
   return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${style}`}><span className={`size-1.5 rounded-full ${dot}`} />{label}</span>;

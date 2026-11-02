@@ -1,4 +1,6 @@
 import type { ChangeEvent } from "react";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 export interface SelectOption {
   label: string;
@@ -30,9 +32,10 @@ export default function AppSelect({
   disabled = false,
   required = false,
 }: AppSelectProps) {
+  const { t } = useI18n();
   return (
     <div className={`${containerClassName} min-w-0`}>
-      {label && <label htmlFor={name} className="mb-1.5 block text-[13px] font-semibold text-secondary">{label}{required && <span aria-hidden="true" className="ml-1 text-rose-500">*</span>}</label>}
+      {label && <label htmlFor={name} className="mb-1.5 block text-[13px] font-semibold text-secondary">{translateUiText(label, t)}{required && <span aria-hidden="true" className="ml-1 text-rose-500">*</span>}</label>}
       <select
         id={name}
         name={name}
@@ -44,8 +47,8 @@ export default function AppSelect({
         aria-describedby={error ? `${name}-error` : undefined}
         className={`w-full rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-60 ${error ? "border-rose-500" : "border-border dark:border-[#4a4359]"}`}
       >
-        <option value="">{placeholder}</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        <option value="">{translateUiText(placeholder, t)}</option>
+        {options.map((option) => <option key={option.value} value={option.value}>{translateUiText(option.label, t)}</option>)}
       </select>
       {error && <p id={`${name}-error`} className="mt-1 text-xs text-rose-600">{error}</p>}
     </div>

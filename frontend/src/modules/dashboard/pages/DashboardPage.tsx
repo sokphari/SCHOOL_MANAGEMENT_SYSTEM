@@ -15,6 +15,7 @@ import { useAuth } from "@/modules/auth/hooks/useAuth";
 import GenderChart from "@/modules/dashboard/components/charts/GenderChart";
 import RequestChart from "@/modules/dashboard/components/charts/RequestChart";
 import type { ApiErrorResponse, DashboardData } from "@/modules/dashboard/types/dashboard";
+import { useI18n } from "@/shared/i18n/I18nProvider";
 
 interface Metric {
   label: string;
@@ -34,6 +35,7 @@ const metricToneClasses: Record<Metric["tone"], string> = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { language, t } = useI18n();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,11 +51,11 @@ export default function DashboardPage() {
       const message = axios.isAxiosError<ApiErrorResponse>(requestError)
         ? requestError.response?.data?.message
         : undefined;
-      setError(message || "We couldn’t load the dashboard. Please try again.");
+      setError(message || t("dashboard.loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void fetchDashboard();
@@ -63,7 +65,7 @@ export default function DashboardPage() {
     return (
       <section className="grid min-h-[260px] content-center justify-items-center gap-3 text-secondary" aria-live="polite">
         <div className="size-[31px] animate-spin rounded-full border-[3px] border-border border-t-brand" />
-        <p className="text-xs">Loading your dashboard…</p>
+        <p className="text-xs">{t("dashboard.loading")}</p>
       </section>
     );
   }
@@ -72,10 +74,10 @@ export default function DashboardPage() {
     return (
       <section className="grid min-h-[260px] content-center justify-items-center gap-3 text-center" role="alert">
         <div className="grid size-9 place-items-center rounded-full bg-rose-50 font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-300">!</div>
-        <h2 className="m-0 text-lg font-semibold text-primary">Dashboard unavailable</h2>
+        <h2 className="m-0 text-lg font-semibold text-primary">{t("dashboard.unavailable")}</h2>
         <p className="text-xs text-secondary">{error}</p>
         <button className="mt-1 rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white hover:bg-brand-strong" type="button" onClick={() => void fetchDashboard()}>
-          Try again
+          {t("dashboard.tryAgain")}
         </button>
       </section>
     );
@@ -84,71 +86,71 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <section className="grid min-h-[260px] content-center justify-items-center gap-3 text-secondary">
-        <h2 className="m-0 text-lg font-semibold text-primary">No dashboard data</h2>
-        <p className="text-xs">There is no summary information to show yet.</p>
+        <h2 className="m-0 text-lg font-semibold text-primary">{t("dashboard.noData")}</h2>
+        <p className="text-xs">{t("dashboard.noSummary")}</p>
       </section>
     );
   }
 
   const metrics: Metric[] = data.role === "admin"
     ? [
-        { label: "Students", value: data.total_students, caption: "Enrolled learners", icon: faUsers, tone: "purple" },
-        { label: "Teachers", value: data.total_teachers, caption: "Teaching staff", icon: faChalkboardUser, tone: "blue" },
-        { label: "Classes", value: data.total_classes, caption: "Active learning groups", icon: faBookOpen, tone: "teal" },
-        { label: "Attendance today", value: data.today_attendance, caption: "Records submitted today", icon: faCalendarCheck, tone: "rose" },
+        { label: t("dashboard.students"), value: data.total_students, caption: t("dashboard.enrolledLearners"), icon: faUsers, tone: "purple" },
+        { label: t("dashboard.teachers"), value: data.total_teachers, caption: t("dashboard.teachingStaff"), icon: faChalkboardUser, tone: "blue" },
+        { label: t("dashboard.classes"), value: data.total_classes, caption: t("dashboard.activeGroups"), icon: faBookOpen, tone: "teal" },
+        { label: t("dashboard.attendanceToday"), value: data.today_attendance, caption: t("dashboard.recordsToday"), icon: faCalendarCheck, tone: "rose" },
       ]
     : [
-        { label: "My classes", value: data.my_classes.length, caption: "Classes assigned to you", icon: faBookOpen, tone: "purple" },
-        { label: "My students", value: data.total_students, caption: "Across your classes", icon: faUsers, tone: "blue" },
-        { label: "Attendance today", value: data.today_attendance, caption: "Records submitted today", icon: faCalendarCheck, tone: "teal" },
-        { label: "Male students", value: data.male_students, caption: "In your classes", icon: faPerson, tone: "amber" },
-        { label: "Female students", value: data.female_students, caption: "In your classes", icon: faPersonDress, tone: "rose" },
+        { label: t("dashboard.myClasses"), value: data.my_classes.length, caption: t("dashboard.assignedClasses"), icon: faBookOpen, tone: "purple" },
+        { label: t("dashboard.myStudents"), value: data.total_students, caption: t("dashboard.acrossClasses"), icon: faUsers, tone: "blue" },
+        { label: t("dashboard.attendanceToday"), value: data.today_attendance, caption: t("dashboard.recordsToday"), icon: faCalendarCheck, tone: "teal" },
+        { label: t("dashboard.maleStudents"), value: data.male_students, caption: t("dashboard.inYourClasses"), icon: faPerson, tone: "amber" },
+        { label: t("dashboard.femaleStudents"), value: data.female_students, caption: t("dashboard.inYourClasses"), icon: faPersonDress, tone: "rose" },
       ];
 
   const currentHour = new Date().getHours();
-  const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
+  const greeting = t(currentHour < 12 ? "dashboard.goodMorning" : currentHour < 18 ? "dashboard.goodAfternoon" : "dashboard.goodEvening");
 
   return (
     <section className="grid gap-5 text-primary max-[600px]:gap-4">
       <div className="flex items-end justify-between gap-5 max-[600px]:items-start">
         <div>
-          <p className="mb-1.5 text-[10px] font-bold tracking-[1.1px] text-brand">OVERVIEW</p>
+          <p className="mb-1.5 text-[10px] font-bold tracking-[1.1px] text-brand">{t("dashboard.overview")}</p>
           <h2 className="m-0 text-[clamp(25px,2.6vw,30px)] font-bold leading-tight tracking-[-1px] text-primary">
             {greeting}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
           </h2>
-          <p className="mt-1.5 text-sm text-secondary max-[370px]:max-w-[180px]">Here’s what’s happening at your school today.</p>
+          <p className="mt-1.5 text-sm text-secondary max-[370px]:max-w-[180px]">{t("dashboard.intro")}</p>
         </div>
         <div className="flex min-w-[150px] items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card max-[600px]:min-w-0 max-[600px]:p-2">
           <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-brand-soft text-xs text-brand max-[600px]:size-[30px]">
             <FontAwesomeIcon icon={faCalendarCheck} />
           </span>
           <span>
-            <small className="mb-[3px] block text-[9px] font-bold tracking-[1px] text-muted max-[600px]:hidden">TODAY</small>
+            <small className="mb-[3px] block text-[9px] font-bold tracking-[1px] text-muted max-[600px]:hidden">{t("dashboard.today")}</small>
             <strong className="block text-xs font-semibold text-primary max-[600px]:text-[10px]">
-              {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              {new Date().toLocaleDateString(language === "km" ? "km-KH" : "en-US", { month: "short", day: "numeric", year: "numeric" })}
             </strong>
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 max-[600px]:grid-cols-2 max-[600px]:gap-2" aria-label="School statistics">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 max-[600px]:grid-cols-2 max-[600px]:gap-2" aria-label={t("app.schoolDashboard")}>
         {metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}
       </div>
 
       {data.role === "admin" ? (
         <div className="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
           <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
-            <PanelHeading eyebrow="STUDENT PROFILE" title="Gender distribution" badge="Students" />
+            <PanelHeading eyebrow={t("dashboard.genderProfile")} title={t("dashboard.genderDistribution")} badge={t("dashboard.students")} />
             <GenderChart male={data.male_students} female={data.female_students} />
           </section>
           <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
-            <PanelHeading eyebrow="INBOX OVERVIEW" title="Student requests" badge="By status" />
+            <PanelHeading eyebrow={t("dashboard.inboxOverview")} title={t("dashboard.studentRequests")} badge={t("dashboard.byStatus")} />
             <RequestChart stats={data.request_stats} />
           </section>
         </div>
       ) : (
         <section className="rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
-          <PanelHeading eyebrow="YOUR TEACHING" title="My classes" badge={`${data.my_classes.length} assigned`} />
+          <PanelHeading eyebrow={t("dashboard.yourTeaching")} title={t("dashboard.myClasses")} badge={t("dashboard.assigned", { count: data.my_classes.length })} />
           {data.my_classes.length > 0 ? (
             <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2.5">
               {data.my_classes.map((schoolClass) => (
@@ -159,7 +161,7 @@ export default function DashboardPage() {
                   <span className="min-w-0 flex-1">
                     <strong className="block truncate text-[11px] font-semibold text-primary">{schoolClass.name}</strong>
                     <small className="mt-1 block truncate text-[9px] text-muted">
-                      {schoolClass.section ? `Section ${schoolClass.section}` : "Class group"}
+                      {schoolClass.section ? t("dashboard.section", { section: schoolClass.section }) : t("dashboard.classGroup")}
                     </small>
                   </span>
                   <span className="text-[19px] text-muted">›</span>
@@ -168,7 +170,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="mt-3 rounded-[13px] border border-dashed border-border bg-app-bg px-4 py-5 text-center text-sm text-secondary">
-              No classes are assigned to your account yet.
+              {t("dashboard.noClasses")}
             </div>
           )}
         </section>
@@ -190,13 +192,14 @@ function PanelHeading({ eyebrow, title, badge }: { eyebrow: string; title: strin
 }
 
 function MetricCard({ metric }: { metric: Metric }) {
+  const { t } = useI18n();
   return (
     <article className="min-w-0 rounded-2xl border border-border bg-surface p-3.5 shadow-card max-[600px]:rounded-[14px] max-[600px]:p-3">
       <div className="flex items-center justify-between">
         <span className={`grid size-[34px] place-items-center rounded-xl text-sm max-[600px]:size-8 ${metricToneClasses[metric.tone]}`}>
           <FontAwesomeIcon icon={metric.icon} />
         </span>
-        <span className={`grid size-[23px] place-items-center rounded-full text-[13px] ${metricToneClasses[metric.tone]}`} aria-label="Current total">↗</span>
+        <span className={`grid size-[23px] place-items-center rounded-full text-[13px] ${metricToneClasses[metric.tone]}`} aria-label={t("dashboard.currentTotal")}>↗</span>
       </div>
       <p className="mb-1 mt-3 text-xs font-semibold text-secondary max-[600px]:mt-2.5">{metric.label}</p>
       <strong className="block text-[26px] font-bold leading-[1.15] tracking-tight text-primary max-[600px]:text-[23px]">

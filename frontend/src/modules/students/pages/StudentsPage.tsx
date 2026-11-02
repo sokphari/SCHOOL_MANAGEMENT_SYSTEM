@@ -9,6 +9,8 @@ import AppSelect from "@/shared/components/AppSelect.tsx";
 import AppPagination from "@/shared/components/AppPagination.tsx";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import type { Student, StudentFilters } from "@/modules/students/types/student";
+import { useI18n } from "@/shared/i18n/I18nProvider";
+import { translateUiText } from "@/shared/i18n/translateUiText";
 
 interface PaginationState {
   current_page: number;
@@ -25,6 +27,7 @@ interface StudentColumn {
 const PAGE_SIZE = 15;
 
 export default function StudentsPage() {
+  const { t } = useI18n();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({ current_page: 1, last_page: 1, total: 0 });
@@ -84,7 +87,7 @@ export default function StudentsPage() {
     {
       key: "gender", title: "Gender", render: (row) => (
         <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize ${row.gender === "male" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : "bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300"}`}>
-          {row.gender || "—"}
+          {translateUiText(row.gender || "—", t)}
         </span>
       ),
     },
@@ -92,7 +95,7 @@ export default function StudentsPage() {
     {
       key: "status", title: "Status", render: (row) => (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${row.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}>
-          <span className={`size-1.5 rounded-full ${row.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />{row.status || "—"}
+          <span className={`size-1.5 rounded-full ${row.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />{translateUiText(row.status || "—", t)}
         </span>
       ),
     },
@@ -116,9 +119,9 @@ export default function StudentsPage() {
     <div className="mx-auto w-full max-w-[1800px] space-y-4">
       <section className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">Student directory</p>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">Students</h1>
-          <p className="mb-0 mt-1 text-sm text-secondary">View and manage student records.</p>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[1.2px] text-brand">{t("students.directory")}</p>
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-primary sm:text-[28px]">{t("students.title")}</h1>
+          <p className="mb-0 mt-1 text-sm text-secondary">{t("students.description")}</p>
         </div>
         {user?.role === "admin" && <div className="flex flex-wrap gap-2"><button onClick={() => navigate("/admin/students/registrations")} className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:border-brand/40 hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand/40">
           <FontAwesomeIcon icon={faQrcode} /> Registration QR
@@ -129,9 +132,9 @@ export default function StudentsPage() {
 
       <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="grid grid-cols-1 gap-x-3 gap-y-0 border-b border-border px-4 py-3 sm:grid-cols-2 sm:px-5 xl:grid-cols-[minmax(240px,2fr)_1fr_1fr]">
-          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search by name, phone, or email" />
-          <AppSelect containerClassName="mb-0" name="status" value={filters.status} onChange={handleFilterChange} placeholder="All statuses" options={[{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} />
-          <AppSelect containerClassName="mb-0" name="gender" value={filters.gender} onChange={handleFilterChange} placeholder="All genders" options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
+          <AppInput containerClassName="mb-0" name="search" value={filters.search} onChange={handleFilterChange} placeholder={t("students.search")} />
+          <AppSelect containerClassName="mb-0" name="status" value={filters.status} onChange={handleFilterChange} placeholder={t("students.statuses")} options={[{ label: t("common.active"), value: "active" }, { label: t("common.inactive"), value: "inactive" }]} />
+          <AppSelect containerClassName="mb-0" name="gender" value={filters.gender} onChange={handleFilterChange} placeholder={t("students.genders")} options={[{ label: t("chart.male"), value: "male" }, { label: t("chart.female"), value: "female" }]} />
         </div>
         {loading ? <div className="grid min-h-56 place-items-center text-sm text-secondary"><span className="flex items-center gap-2"><span className="size-4 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />Loading students…</span></div>
           : students.length > 0 ? <>

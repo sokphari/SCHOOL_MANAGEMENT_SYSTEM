@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { useI18n } from "@/shared/i18n/I18nProvider";
 
 interface GenderChartProps {
   male: number;
@@ -6,9 +7,10 @@ interface GenderChartProps {
 }
 
 export default function GenderChart({ male, female }: GenderChartProps) {
+  const { t } = useI18n();
   const data = [
-    { name: "Male", value: male },
-    { name: "Female", value: female },
+    { name: t("chart.male"), value: male },
+    { name: t("chart.female"), value: female },
   ];
 
   return (
@@ -38,8 +40,8 @@ export default function GenderChart({ male, female }: GenderChartProps) {
         </ResponsiveContainer>
       </div>
       <div className="flex justify-center gap-5 text-[11px] text-secondary">
-        <span className="inline-flex items-center gap-2"><span className="size-2.5 rounded-full bg-violet-700" />Male</span>
-        <span className="inline-flex items-center gap-2"><span className="size-2.5 rounded-full bg-violet-300" />Female</span>
+        <span className="inline-flex items-center gap-2"><span className="size-2.5 rounded-full bg-violet-700" />{t("chart.male")}</span>
+        <span className="inline-flex items-center gap-2"><span className="size-2.5 rounded-full bg-violet-300" />{t("chart.female")}</span>
       </div>
     </div>
   );
