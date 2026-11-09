@@ -5,6 +5,7 @@ import { faBuilding, faChevronDown, faDoorOpen, faLayerGroup, faMagnifyingGlass,
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getBuildings, removeBuilding, removeFloor, removeRoom } from "@/modules/locations/api/locationApi.ts";
 import type { BuildingLocation, FloorLocation, RoomLocation } from "@/modules/locations/types/location";
+import ConfirmDialog from "@/shared/feedback/ConfirmDialog";
 
 const roomTypeLabels = { classroom: "Classroom", computer_lab: "Computer lab", office: "Office", meeting_room: "Meeting room", library: "Library", other: "Other" };
 
@@ -20,6 +21,8 @@ export default function FacilitiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(searchParams.get("notice") || "");
+  const [pendingDelete, setPendingDelete] = useState<{ kind: "building" | "floor" | "room"; record: BuildingLocation | FloorLocation | RoomLocation } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadFacilities = useCallback(async (preserveBuildingId?: string) => {
     setLoading(true);
@@ -67,20 +70,28 @@ export default function FacilitiesPage() {
   const visibleFloors = hasRoomFilters ? floors.filter((floor) => filterRooms(floor.rooms || []).length > 0) : floors;
   const roomCountForBuilding = (building: BuildingLocation) => (building.floors || []).reduce((total, floor) => total + (floor.rooms?.length || 0), 0);
 
-  const deleteLocation = async (kind: "building" | "floor" | "room", record: BuildingLocation | FloorLocation | RoomLocation) => {
-    if (!window.confirm(`Delete ${record.name}?`)) return;
+  const deleteLocation = async () => {
+    if (!pendingDelete || deleting) return;
+    const { kind, record } = pendingDelete;
     setError(""); setSuccess("");
     try {
+      setDeleting(true);
       if (kind === "building") await removeBuilding(record.id);
       else if (kind === "floor") await removeFloor(record.id);
       else await removeRoom(record.id);
       setSuccess(`${kind[0].toUpperCase()}${kind.slice(1)} deleted.`);
+      setPendingDelete(null);
       await loadFacilities(kind === "building" ? undefined : selectedBuildingId);
     } catch (requestError) {
       console.error(requestError);
       setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || `Could not delete ${kind}.` : `Could not delete ${kind}.`);
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
     }
   };
+
+  const requestDeleteLocation = (kind: "building" | "floor" | "room", record: BuildingLocation | FloorLocation | RoomLocation) => setPendingDelete({ kind, record });
 
   const stats = [
     { label: "Total buildings", value: buildings.length, icon: faBuilding, color: "text-violet-600 dark:text-violet-300" },
@@ -112,15 +123,25 @@ export default function FacilitiesPage() {
         <div aria-label="Facility statistics" className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">{stats.map((stat) => <article key={stat.label} className="min-h-[92px] rounded-xl border border-border bg-surface p-3.5 shadow-card"><FontAwesomeIcon icon={stat.icon} className={`mb-2 text-sm ${stat.color}`} /><p className="m-0 text-xl font-bold leading-none text-primary">{loading ? "—" : stat.value}</p><p className="mb-0 mt-1.5 text-xs text-secondary">{stat.label}</p></article>)}</div>
 
         {loading ? <div className="grid min-h-56 place-items-center rounded-xl border border-border bg-surface text-sm text-secondary"><span className="flex items-center gap-2"><span className="size-4 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />Loading selected building…</span></div> : !selectedBuilding ? <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-border bg-surface px-5 text-center"><div><span className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faBuilding} /></span><h2 className="m-0 text-base font-semibold text-primary">No building selected</h2><p className="mb-4 mt-1 text-sm text-secondary">Add a building to start organizing floors and rooms.</p><button type="button" onClick={openCreateBuilding} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} className="mr-2" />Add building</button></div></div> : <>
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3.5"><div className="min-w-0"><h2 className="m-0 truncate text-base font-semibold text-primary">{selectedBuilding.name}</h2><div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-secondary"><span className="rounded border border-border px-2 py-0.5">{selectedBuilding.code || "No code assigned"}</span><span className="rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">{floors.length} {floors.length === 1 ? "floor" : "floors"}</span><span className="rounded-full bg-orange-100 px-2 py-0.5 font-medium text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">{roomCountForBuilding(selectedBuilding)} {roomCountForBuilding(selectedBuilding) === 1 ? "room" : "rooms"}</span><span className={`rounded-full px-2 py-0.5 font-medium ${selectedBuilding.status === "active" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"}`}>{selectedBuilding.status}</span></div>{selectedBuilding.description && <p className="mb-0 mt-1.5 line-clamp-1 text-xs text-muted">{selectedBuilding.description}</p>}</div><div className="flex shrink-0 gap-1.5"><button type="button" onClick={() => navigate(`/admin/facilities/buildings/${selectedBuilding.id}/edit?buildingId=${selectedBuilding.id}`)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-secondary hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faPenToSquare} />Edit</button><button type="button" onClick={() => void deleteLocation("building", selectedBuilding)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-secondary hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"><FontAwesomeIcon icon={faTrash} />Delete</button></div></section>
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3.5"><div className="min-w-0"><h2 className="m-0 truncate text-base font-semibold text-primary">{selectedBuilding.name}</h2><div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-secondary"><span className="rounded border border-border px-2 py-0.5">{selectedBuilding.code || "No code assigned"}</span><span className="rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">{floors.length} {floors.length === 1 ? "floor" : "floors"}</span><span className="rounded-full bg-orange-100 px-2 py-0.5 font-medium text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">{roomCountForBuilding(selectedBuilding)} {roomCountForBuilding(selectedBuilding) === 1 ? "room" : "rooms"}</span><span className={`rounded-full px-2 py-0.5 font-medium ${selectedBuilding.status === "active" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"}`}>{selectedBuilding.status}</span></div>{selectedBuilding.description && <p className="mb-0 mt-1.5 line-clamp-1 text-xs text-muted">{selectedBuilding.description}</p>}</div><div className="flex shrink-0 gap-1.5"><button type="button" onClick={() => navigate(`/admin/facilities/buildings/${selectedBuilding.id}/edit?buildingId=${selectedBuilding.id}`)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-secondary hover:bg-brand-soft hover:text-brand-strong"><FontAwesomeIcon icon={faPenToSquare} />Edit</button><button type="button" onClick={() => requestDeleteLocation("building", selectedBuilding)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-secondary hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"><FontAwesomeIcon icon={faTrash} />Delete</button></div></section>
 
           <section className="overflow-hidden rounded-xl border border-border bg-surface"><header className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-3"><div><h2 className="m-0 text-sm font-semibold text-primary">Floors &amp; Rooms <span className="font-normal text-muted">· {floors.length} {floors.length === 1 ? "floor" : "floors"}, {roomCountForBuilding(selectedBuilding)} {roomCountForBuilding(selectedBuilding) === 1 ? "room" : "rooms"}</span></h2></div><button type="button" onClick={() => navigate(`/admin/facilities/floors/create?buildingId=${selectedBuilding.id}`)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs font-semibold text-white hover:bg-brand-strong"><FontAwesomeIcon icon={faPlus} />Add floor</button></header>
             {floors.length > 0 && <div className="grid gap-2 border-y border-border bg-app-bg/25 p-2.5 md:grid-cols-[minmax(180px,1fr)_180px_140px]"><div className="relative"><FontAwesomeIcon icon={faMagnifyingGlass} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-muted" /><input type="search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder="Search rooms by name or code…" aria-label="Search rooms" className="min-h-9 w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-xs text-primary outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/15" /></div><select value={roomType} onChange={(event) => setRoomType(event.currentTarget.value)} aria-label="Filter by room type" className="min-h-9 rounded-lg border border-border bg-surface px-2.5 text-xs text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"><option value="">All room types</option>{Object.entries(roomTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={roomStatus} onChange={(event) => setRoomStatus(event.currentTarget.value)} aria-label="Filter by room status" className="min-h-9 rounded-lg border border-border bg-surface px-2.5 text-xs text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>}
-            {floors.length === 0 ? <div className="grid min-h-28 place-items-center px-4 text-center"><p className="m-0 text-sm text-secondary">No floors in this building yet. Add a floor to get started.</p></div> : visibleFloors.length ? <div className="space-y-2 p-2.5">{visibleFloors.map((floor) => <FloorAccordion key={floor.id} floor={floor} expanded={expandedFloorId === floor.id || (hasRoomFilters && filterRooms(floor.rooms || []).length > 0)} rooms={filterRooms(floor.rooms || [])} hasFilters={hasRoomFilters} onToggle={() => setExpandedFloorId(expandedFloorId === floor.id ? null : floor.id)} onAddRoom={() => navigate(`/admin/facilities/rooms/create?floorId=${floor.id}`)} onEditFloor={() => navigate(`/admin/facilities/floors/${floor.id}/edit?buildingId=${selectedBuilding.id}`)} onDeleteFloor={() => void deleteLocation("floor", floor)} onEditRoom={(room) => navigate(`/admin/facilities/rooms/${room.id}/edit?buildingId=${selectedBuilding.id}`)} onDeleteRoom={(room) => void deleteLocation("room", room)} onViewRoom={(room) => navigate(`/admin/facilities/rooms/${room.id}?buildingId=${selectedBuilding.id}`)} />)}</div> : <div className="grid min-h-24 place-items-center px-4 text-center"><p className="m-0 text-sm text-secondary">No rooms match your search and filters.</p></div>}
+            {floors.length === 0 ? <div className="grid min-h-28 place-items-center px-4 text-center"><p className="m-0 text-sm text-secondary">No floors in this building yet. Add a floor to get started.</p></div> : visibleFloors.length ? <div className="space-y-2 p-2.5">{visibleFloors.map((floor) => <FloorAccordion key={floor.id} floor={floor} expanded={expandedFloorId === floor.id || (hasRoomFilters && filterRooms(floor.rooms || []).length > 0)} rooms={filterRooms(floor.rooms || [])} hasFilters={hasRoomFilters} onToggle={() => setExpandedFloorId(expandedFloorId === floor.id ? null : floor.id)} onAddRoom={() => navigate(`/admin/facilities/rooms/create?floorId=${floor.id}`)} onEditFloor={() => navigate(`/admin/facilities/floors/${floor.id}/edit?buildingId=${selectedBuilding.id}`)} onDeleteFloor={() => requestDeleteLocation("floor", floor)} onEditRoom={(room) => navigate(`/admin/facilities/rooms/${room.id}/edit?buildingId=${selectedBuilding.id}`)} onDeleteRoom={(room) => requestDeleteLocation("room", room)} onViewRoom={(room) => navigate(`/admin/facilities/rooms/${room.id}?buildingId=${selectedBuilding.id}`)} />)}</div> : <div className="grid min-h-24 place-items-center px-4 text-center"><p className="m-0 text-sm text-secondary">No rooms match your search and filters.</p></div>}
           </section>
         </>}
       </section>
     </div>
+    <ConfirmDialog
+      open={pendingDelete !== null}
+      title={`Delete ${pendingDelete?.kind || "facility item"}?`}
+      description={pendingDelete ? `“${pendingDelete.record.name}” will be permanently deleted.` : "This facility item will be permanently deleted."}
+      confirmLabel={`Delete ${pendingDelete?.kind || "item"}`}
+      busy={deleting}
+      busyLabel="Deleting…"
+      onConfirm={() => void deleteLocation()}
+      onCancel={() => setPendingDelete(null)}
+    />
   </div>;
 }
 

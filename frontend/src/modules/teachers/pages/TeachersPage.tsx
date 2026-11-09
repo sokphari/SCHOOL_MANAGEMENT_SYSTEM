@@ -11,6 +11,7 @@ import type { Teacher, TeacherFilters } from "@/modules/teachers/types/teacher";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
 import { notify } from "@/shared/feedback/notify";
+import ConfirmDialog from "@/shared/feedback/ConfirmDialog";
 
 const PAGE_SIZE = 10;
 
@@ -32,6 +33,8 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({ current_page: 1, last_page: 1, total: 0 });
   const [filters, setFilters] = useState<TeacherFilters>({ search: "", status: "", gender: "", page: 1 });
+  const [pendingDelete, setPendingDelete] = useState<Teacher | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   const fetchTeachers = useCallback(async (currentFilters: TeacherFilters) => {
@@ -64,15 +67,20 @@ export default function TeachersPage() {
 
   const handlePageChange = (page: number) => setFilters((current) => ({ ...current, page }));
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this teacher?")) return;
+  const handleDelete = async () => {
+    if (!pendingDelete || deleting) return;
     try {
-      await deleteTeacher(id);
+      setDeleting(true);
+      await deleteTeacher(pendingDelete.id);
       notify("Teacher deleted successfully.");
+      setPendingDelete(null);
       await fetchTeachers(filters);
     } catch (error: unknown) {
       console.error(error);
       notify("Could not delete this teacher.", "error");
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -99,7 +107,7 @@ export default function TeachersPage() {
       key: "actions", title: "Actions", render: (row) => (
         <div className="flex items-center gap-1.5">
           <button onClick={() => navigate(`/admin/teachers/${row.id}/edit`)} className="grid size-8 place-items-center rounded-lg border border-border text-secondary transition hover:border-brand/40 hover:bg-brand-soft hover:text-brand-strong" title="Edit teacher" aria-label={`Edit ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faPenToSquare} /></button>
-          <button onClick={() => handleDelete(row.id)} className="grid size-8 place-items-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40" title="Delete teacher" aria-label={`Delete ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faTrash} /></button>
+          <button onClick={() => setPendingDelete(row)} className="grid size-8 place-items-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40" title="Delete teacher" aria-label={`Delete ${row.first_name} ${row.last_name}`}><FontAwesomeIcon icon={faTrash} /></button>
         </div>
       ),
     },
@@ -134,6 +142,15 @@ export default function TeachersPage() {
             </div>
           </> : <div className="grid min-h-56 place-items-center px-4 text-center"><div><span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-brand-soft text-xl text-brand"><FontAwesomeIcon icon={faChalkboardUser} /></span><p className="m-0 font-semibold text-primary">No teachers found</p><p className="mb-0 mt-1 text-sm text-muted">Try changing your filters or search terms.</p></div></div>}
       </section>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete teacher?"
+        description={pendingDelete ? `Delete ${pendingDelete.first_name} ${pendingDelete.last_name}? This action cannot be undone.` : "This teacher will be permanently deleted."}
+        confirmLabel="Delete teacher"
+        busy={deleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

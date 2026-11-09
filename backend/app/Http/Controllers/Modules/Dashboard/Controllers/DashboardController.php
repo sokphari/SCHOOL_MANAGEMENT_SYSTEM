@@ -8,22 +8,57 @@ use App\Models\Teacher;
 use App\Models\SchoolClass;
 use App\Models\StudentRequest;
 use App\Models\Attendance;
+use Carbon\CarbonPeriod;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
         // Admin dashboard
         if ($user->role === 'admin') {
+            $filters = $request->validate([
+                'from_date' => ['nullable', 'date_format:Y-m-d'],
+                'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
+            ]);
+            $fromDate = $filters['from_date'] ?? today()->subDays(6)->toDateString();
+            $toDate = $filters['to_date'] ?? today()->toDateString();
+            $attendanceByDate = Attendance::query()
+                ->select('attendance_date', 'status', DB::raw('COUNT(*) as total'))
+                ->whereBetween('attendance_date', [$fromDate, $toDate])
+                ->groupBy('attendance_date', 'status')
+                ->orderBy('attendance_date')
+                ->get()
+                ->groupBy(fn ($row) => (string) $row->attendance_date);
+            $attendanceTrend = collect(CarbonPeriod::create($fromDate, $toDate))
+                ->map(function ($date) use ($attendanceByDate) {
+                    $dateKey = $date->toDateString();
+                    $records = $attendanceByDate->get($dateKey, collect())->keyBy('status');
+
+                    return [
+                        'date' => $dateKey,
+                        'present' => (int) ($records->get('present')?->total ?? 0),
+                        'absent' => (int) ($records->get('absent')?->total ?? 0),
+                        'late' => (int) ($records->get('late')?->total ?? 0),
+                        'permission' => (int) ($records->get('excused')?->total ?? 0),
+                    ];
+                })
+                ->values();
+
             return response()->json([
                 'role' => 'admin',
                 'total_students' => Student::count(),
                 'total_teachers' => Teacher::count(),
                 'total_classes' => SchoolClass::count(),
                 'today_attendance' => Attendance::whereDate('attendance_date', today())->count(),
+                'today_present' => Attendance::whereDate('attendance_date', today())
+                    ->where('status', 'present')
+                    ->count(),
+                'attendance_range' => ['from_date' => $fromDate, 'to_date' => $toDate],
+                'attendance_trend' => $attendanceTrend,
 
                 'male_students' => Student::where('gender', 'male')->count(),
                 'female_students' => Student::where('gender', 'female')->count(),

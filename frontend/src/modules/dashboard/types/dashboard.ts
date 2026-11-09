@@ -11,6 +11,14 @@ export interface DashboardClass {
   section: string | null;
 }
 
+export interface AttendanceTrendPoint {
+  date: string;
+  present: number;
+  absent: number;
+  late: number;
+  permission: number;
+}
+
 interface DashboardBase {
   today_attendance: number;
   total_students: number;
@@ -23,6 +31,9 @@ export interface AdminDashboardData extends DashboardBase {
   role: "admin";
   total_teachers: number;
   total_classes: number;
+  today_present: number;
+  attendance_range: { from_date: string; to_date: string };
+  attendance_trend: AttendanceTrendPoint[];
 }
 
 export interface TeacherDashboardData extends DashboardBase {

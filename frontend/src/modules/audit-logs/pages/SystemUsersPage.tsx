@@ -11,6 +11,15 @@ import { deleteSystemUser, getSystemUsers, setSystemUserActive } from "@/modules
 import type { PaginatedSystemUsers, SystemUser } from "@/modules/audit-logs/api/auditLogsApi";
 import { approveStaffRegistration, blockRegistrationIp, getPendingStaffRegistrations, rejectStaffRegistration, unblockRegistrationIp } from "@/modules/audit-logs/api/staffRegistrationsApi";
 import type { StaffAccountRegistration } from "@/modules/audit-logs/api/staffRegistrationsApi";
+import ConfirmDialog from "@/shared/feedback/ConfirmDialog";
+
+interface PendingConfirmation {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  tone: "danger" | "success";
+  action: () => Promise<void>;
+}
 
 function formatLastActivity(value: string | null) {
   if (!value) return "No recorded activity";
@@ -36,6 +45,8 @@ export default function SystemUsersPage() {
   const [registrationsLoading, setRegistrationsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"users" | "pending">(() => new URLSearchParams(location.search).get("tab") === "pending" ? "pending" : "users");
   const [busyRegistrationId, setBusyRegistrationId] = useState<number | null>(null);
+  const [confirmation, setConfirmation] = useState<PendingConfirmation | null>(null);
+  const [confirmationBusy, setConfirmationBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,79 +76,117 @@ export default function SystemUsersPage() {
     return () => { active = false; };
   }, [reloadKey]);
 
-  const toggleAccountAccess = async (user: SystemUser) => {
+  const toggleAccountAccess = (user: SystemUser) => {
     const nextActive = !user.is_active;
     const action = nextActive ? "unblock" : "block";
-    if (!window.confirm(`${action === "block" ? "Block" : "Unblock"} ${user.name}'s account?`)) return;
-
-    setBusyUserId(user.id);
-    setError("");
-    setNotice("");
-    try {
-      const { data } = await setSystemUserActive(user.id, nextActive);
-      setNotice(data.message);
-      setReloadKey((current) => current + 1);
-    } catch (requestError) {
-      setError(getRequestMessage(requestError, `Could not ${action} this account.`));
-    } finally {
-      setBusyUserId(null);
-    }
+    setConfirmation({
+      title: `${action === "block" ? "Block" : "Unblock"} account?`,
+      description: `${user.name}'s account will be ${action === "block" ? "blocked" : "unblocked"}.`,
+      confirmLabel: action === "block" ? "Block account" : "Unblock account",
+      tone: action === "block" ? "danger" : "success",
+      action: async () => {
+        setBusyUserId(user.id);
+        setError("");
+        setNotice("");
+        try {
+          const { data } = await setSystemUserActive(user.id, nextActive);
+          setNotice(data.message);
+          setReloadKey((current) => current + 1);
+        } catch (requestError) {
+          setError(getRequestMessage(requestError, `Could not ${action} this account.`));
+        } finally {
+          setBusyUserId(null);
+        }
+      },
+    });
   };
 
-  const removeAccount = async (user: SystemUser) => {
-    if (!window.confirm(`Delete ${user.name}'s account? This cannot be undone.`)) return;
-
-    setBusyUserId(user.id);
-    setError("");
-    setNotice("");
-    try {
-      const { data } = await deleteSystemUser(user.id);
-      setNotice(data.message);
-      setReloadKey((current) => current + 1);
-    } catch (requestError) {
-      setError(getRequestMessage(requestError, "Could not delete this account."));
-    } finally {
-      setBusyUserId(null);
-    }
+  const removeAccount = (user: SystemUser) => {
+    setConfirmation({
+      title: "Delete account?",
+      description: `Delete ${user.name}'s account? This action cannot be undone.`,
+      confirmLabel: "Delete account",
+      tone: "danger",
+      action: async () => {
+        setBusyUserId(user.id);
+        setError("");
+        setNotice("");
+        try {
+          const { data } = await deleteSystemUser(user.id);
+          setNotice(data.message);
+          setReloadKey((current) => current + 1);
+        } catch (requestError) {
+          setError(getRequestMessage(requestError, "Could not delete this account."));
+        } finally {
+          setBusyUserId(null);
+        }
+      },
+    });
   };
 
-  const reviewRegistration = async (registration: StaffAccountRegistration, action: "approve" | "reject") => {
-    if (action === "reject" && !window.confirm(`Reject the teacher account request from ${registration.name}?`)) return;
-    if (action === "approve" && !window.confirm(`Approve ${registration.name} as a teacher account?`)) return;
-    setBusyRegistrationId(registration.id);
-    setError("");
-    setNotice("");
-    try {
-      const { data } = action === "approve"
-        ? await approveStaffRegistration(registration.id)
-        : await rejectStaffRegistration(registration.id);
-      setNotice(data.message);
-      setReloadKey((current) => current + 1);
-    } catch (requestError) {
-      setError(getRequestMessage(requestError, `Could not ${action} this registration.`));
-    } finally {
-      setBusyRegistrationId(null);
-    }
+  const reviewRegistration = (registration: StaffAccountRegistration, action: "approve" | "reject") => {
+    setConfirmation({
+      title: `${action === "approve" ? "Approve" : "Reject"} teacher request?`,
+      description: action === "approve"
+        ? `Approve ${registration.name} and create their teacher account?`
+        : `Reject the teacher account request from ${registration.name}?`,
+      confirmLabel: action === "approve" ? "Approve request" : "Reject request",
+      tone: action === "approve" ? "success" : "danger",
+      action: async () => {
+        setBusyRegistrationId(registration.id);
+        setError("");
+        setNotice("");
+        try {
+          const { data } = action === "approve"
+            ? await approveStaffRegistration(registration.id)
+            : await rejectStaffRegistration(registration.id);
+          setNotice(data.message);
+          setReloadKey((current) => current + 1);
+        } catch (requestError) {
+          setError(getRequestMessage(requestError, `Could not ${action} this registration.`));
+        } finally {
+          setBusyRegistrationId(null);
+        }
+      },
+    });
   };
 
-  const toggleRegistrationIp = async (registration: StaffAccountRegistration) => {
+  const toggleRegistrationIp = (registration: StaffAccountRegistration) => {
     if (!registration.ip_address) return;
     const isBlocked = Boolean(registration.ip_blocked);
     const action = isBlocked ? "unblock" : "block";
-    if (!window.confirm(`${action === "block" ? "Block" : "Unblock"} IP ${registration.ip_address} for login and new account registration?`)) return;
-    setBusyRegistrationId(registration.id);
-    setError("");
-    setNotice("");
+    setConfirmation({
+      title: `${action === "block" ? "Block" : "Unblock"} IP address?`,
+      description: `${action === "block" ? "Block" : "Unblock"} ${registration.ip_address} for login and new account registration?`,
+      confirmLabel: `${action === "block" ? "Block" : "Unblock"} IP`,
+      tone: action === "block" ? "danger" : "success",
+      action: async () => {
+        setBusyRegistrationId(registration.id);
+        setError("");
+        setNotice("");
+        try {
+          const { data } = isBlocked
+            ? await unblockRegistrationIp(registration.ip_address!)
+            : await blockRegistrationIp(registration.id);
+          setNotice(data.message);
+          setReloadKey((current) => current + 1);
+        } catch (requestError) {
+          setError(getRequestMessage(requestError, `Could not ${action} this IP address.`));
+        } finally {
+          setBusyRegistrationId(null);
+        }
+      },
+    });
+  };
+
+  const runConfirmation = async () => {
+    if (!confirmation || confirmationBusy) return;
+    setConfirmationBusy(true);
     try {
-      const { data } = isBlocked
-        ? await unblockRegistrationIp(registration.ip_address)
-        : await blockRegistrationIp(registration.id);
-      setNotice(data.message);
-      setReloadKey((current) => current + 1);
-    } catch (requestError) {
-      setError(getRequestMessage(requestError, `Could not ${action} this IP address.`));
+      await confirmation.action();
     } finally {
-      setBusyRegistrationId(null);
+      setConfirmationBusy(false);
+      setConfirmation(null);
     }
   };
 
@@ -199,6 +248,17 @@ export default function SystemUsersPage() {
           {pagination && <AppPagination currentPage={pagination.current_page} lastPage={pagination.last_page} onPageChange={setPage} showSinglePage />}
         </footer>
       </section>}
+      <ConfirmDialog
+        open={confirmation !== null}
+        title={confirmation?.title || "Confirm action"}
+        description={confirmation?.description || "Please confirm this action."}
+        confirmLabel={confirmation?.confirmLabel || "Confirm"}
+        tone={confirmation?.tone || "danger"}
+        busy={confirmationBusy}
+        busyLabel="Working…"
+        onConfirm={() => void runConfirmation()}
+        onCancel={() => setConfirmation(null)}
+      />
     </main>
   );
 }

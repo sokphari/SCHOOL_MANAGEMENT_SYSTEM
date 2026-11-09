@@ -922,3 +922,57 @@ Do not use `migrate:fresh` on a database containing data that should be kept.
   schedule selectors, section headings, and controls use the same messages.
 - Shared table column headings and the empty-table message also use translated
   labels; student/teacher gender and status badges are translated as well.
+
+## Follow-up — Admin dashboard attendance trend (2026-11-09)
+
+- Added an admin attendance line chart with editable start and end date filters.
+  The dashboard API groups attendance records by day and status, and fills dates
+  without records with zero values. The default range is the last seven days.
+- Added English and Khmer labels for the chart, filters, statuses, and empty
+  state. Teacher dashboard requests and views are unchanged.
+- Added clearly labeled sample finance cards to the admin dashboard because no
+  fees/payments module exists yet. These figures are placeholders and must be
+  replaced with finance API data before presenting them as actual school data.
+- No dependencies were added. PHP syntax check passed. Frontend production build
+  is being checked. TypeScript checking reports existing errors in the public
+  homepage and student list files; no errors were reported for dashboard files.
+
+## Follow-up — Dashboard finance sample filters (2026-11-09)
+
+- Moved the admin financial overview to the top of the dashboard, before the
+  general metric cards.
+- Added Today, Yesterday, This week, Last week, and Custom range controls, with
+  calendar inputs for custom dates. The selected period updates the displayed
+  sample collection total.
+- Added a Collection today figure and retained an outstanding fees sample.
+  Every value remains labeled as sample data because the app does not yet have
+  a fee or payment records module. No dependency was added.
+
+## Follow-up — Dashboard layout revision (2026-11-09)
+
+- Removed the sample finance section at the user's request.
+- Reworked the admin dashboard to show four summary cards, the attendance
+  overview with date filters, quick links for common admin tasks, and a recent
+  activity empty state. The attendance chart defaults to the current week.
+- Added an accurate present-today count to the admin dashboard API instead of
+  using all attendance records for that card.
+- Added English and Khmer text for the new dashboard sections. No dependencies
+  were added. Recent activity is a placeholder because the dashboard API does
+  not currently provide an activity feed.
+
+## Follow-up — In-app delete confirmations (2026-11-09)
+
+- Replaced browser `window.confirm()` prompts for schedule template and teacher
+  deletion with a shared in-app confirmation dialog.
+- Dialogs identify the item being deleted, provide cancel and destructive
+  actions, and show a busy state while the API request is running. Existing
+  success and error notifications remain in place. No dependency was added.
+
+## Follow-up — Facilities and account confirmations (2026-11-09)
+
+- Replaced browser confirmation prompts for building, floor, and room deletion,
+  plus account block/unblock, account deletion, teacher request approval/rejection,
+  and registration IP block/unblock with the shared in-app confirmation dialog.
+- Dialog button styling reflects destructive versus approval/unblock actions;
+  API responses continue to appear in the existing success/error messages.
+- No dependencies were added.

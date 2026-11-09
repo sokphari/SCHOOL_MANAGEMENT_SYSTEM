@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookOpen,
   faCalendarCheck,
   faChalkboardUser,
+  faChevronRight,
+  faClipboardCheck,
+  faPlus,
+  faTableList,
   faPerson,
   faPersonDress,
   faUsers,
@@ -12,8 +16,8 @@ import {
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { getDashboard } from "@/modules/dashboard/api/dashboardApi";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import GenderChart from "@/modules/dashboard/components/charts/GenderChart";
-import RequestChart from "@/modules/dashboard/components/charts/RequestChart";
+import { Link } from "react-router-dom";
+import AttendanceTrendChart from "@/modules/dashboard/components/charts/AttendanceTrendChart";
 import type { ApiErrorResponse, DashboardData } from "@/modules/dashboard/types/dashboard";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 
@@ -23,6 +27,19 @@ interface Metric {
   caption: string;
   icon: IconDefinition;
   tone: "purple" | "blue" | "rose" | "amber" | "teal";
+}
+
+function toLocalDateInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfCurrentWeek(): string {
+  const date = new Date();
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return toLocalDateInput(date);
 }
 
 const metricToneClasses: Record<Metric["tone"], string> = {
@@ -38,14 +55,20 @@ export default function DashboardPage() {
   const { language, t } = useI18n();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [fromDate, setFromDate] = useState(startOfCurrentWeek);
+  const [toDate, setToDate] = useState(() => toLocalDateInput(new Date()));
+  const hasLoaded = useRef(false);
 
   const fetchDashboard = useCallback(async (): Promise<void> => {
     try {
-      setLoading(true);
+      if (!hasLoaded.current) setLoading(true);
+      else setRefreshing(true);
       setError("");
-      const response = await getDashboard();
+      const response = await getDashboard({ from_date: fromDate, to_date: toDate });
       setData(response.data);
+      hasLoaded.current = true;
     } catch (requestError: unknown) {
       console.error(requestError);
       const message = axios.isAxiosError<ApiErrorResponse>(requestError)
@@ -54,8 +77,9 @@ export default function DashboardPage() {
       setError(message || t("dashboard.loadError"));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [t]);
+  }, [fromDate, toDate, t]);
 
   useEffect(() => {
     void fetchDashboard();
@@ -94,10 +118,10 @@ export default function DashboardPage() {
 
   const metrics: Metric[] = data.role === "admin"
     ? [
-        { label: t("dashboard.students"), value: data.total_students, caption: t("dashboard.enrolledLearners"), icon: faUsers, tone: "purple" },
-        { label: t("dashboard.teachers"), value: data.total_teachers, caption: t("dashboard.teachingStaff"), icon: faChalkboardUser, tone: "blue" },
-        { label: t("dashboard.classes"), value: data.total_classes, caption: t("dashboard.activeGroups"), icon: faBookOpen, tone: "teal" },
-        { label: t("dashboard.attendanceToday"), value: data.today_attendance, caption: t("dashboard.recordsToday"), icon: faCalendarCheck, tone: "rose" },
+        { label: t("dashboard.students"), value: data.total_students, caption: "", icon: faUsers, tone: "purple" },
+        { label: t("dashboard.teachers"), value: data.total_teachers, caption: "", icon: faChalkboardUser, tone: "blue" },
+        { label: t("dashboard.classes"), value: data.total_classes, caption: "", icon: faBookOpen, tone: "teal" },
+        { label: t("dashboard.presentToday"), value: data.today_present, caption: "", icon: faCalendarCheck, tone: "rose" },
       ]
     : [
         { label: t("dashboard.myClasses"), value: data.my_classes.length, caption: t("dashboard.assignedClasses"), icon: faBookOpen, tone: "purple" },
@@ -133,21 +157,54 @@ export default function DashboardPage() {
         </div>
       </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 max-[600px]:grid-cols-2 max-[600px]:gap-2" aria-label={t("app.schoolDashboard")}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 max-[600px]:grid-cols-2 max-[600px]:gap-2" aria-label={t("app.schoolDashboard")}>
         {metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}
       </div>
 
       {data.role === "admin" ? (
-        <div className="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
+        <>
+        <div className="grid grid-cols-2 items-stretch gap-3 max-[900px]:grid-cols-1">
           <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
-            <PanelHeading eyebrow={t("dashboard.genderProfile")} title={t("dashboard.genderDistribution")} badge={t("dashboard.students")} />
-            <GenderChart male={data.male_students} female={data.female_students} />
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <PanelHeading eyebrow={t("dashboard.dailyOverview")} title={t("dashboard.attendanceOverview")} badge={refreshing ? t("dashboard.updating") : t("dashboard.thisWeek")} />
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="grid gap-1 text-[10px] font-semibold text-secondary">
+                  {t("dashboard.from")}
+                  <input aria-label={t("dashboard.from")} type="date" max={toDate} value={fromDate} onChange={(event) => setFromDate(event.currentTarget.value)} className="rounded-lg border border-border bg-app-bg px-2.5 py-2 text-xs text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                </label>
+                <label className="grid gap-1 text-[10px] font-semibold text-secondary">
+                  {t("dashboard.to")}
+                  <input aria-label={t("dashboard.to")} type="date" min={fromDate} max={toLocalDateInput(new Date())} value={toDate} onChange={(event) => setToDate(event.currentTarget.value)} className="rounded-lg border border-border bg-app-bg px-2.5 py-2 text-xs text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                </label>
+              </div>
+            </div>
+            {data.attendance_trend.length ? <AttendanceTrendChart data={data.attendance_trend} /> : <div className="mt-3 grid h-[230px] place-items-center rounded-xl border border-dashed border-border text-sm text-muted">{t("dashboard.noAttendanceTrend")}</div>}
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-secondary">
+              <TrendLegend color="bg-emerald-600" label={t("dashboard.present")} />
+              <TrendLegend color="bg-rose-600" label={t("dashboard.absent")} />
+              <TrendLegend color="bg-amber-600" label={t("dashboard.late")} />
+              <TrendLegend color="bg-violet-700" label={t("dashboard.permission")} />
+            </div>
           </section>
-          <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
-            <PanelHeading eyebrow={t("dashboard.inboxOverview")} title={t("dashboard.studentRequests")} badge={t("dashboard.byStatus")} />
-            <RequestChart stats={data.request_stats} />
+          <section className="rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
+            <h3 className="mb-3 mt-0 text-base font-semibold tracking-tight text-primary">{t("dashboard.quickActions")}</h3>
+            <div className="divide-y divide-border">
+              <QuickAction to="/admin/students/create" label={t("dashboard.registerStudent")} icon={faPlus} />
+              <QuickAction to="/admin/teachers/create" label={t("dashboard.addTeacher")} icon={faPlus} />
+              <QuickAction to="/admin/classes/create" label={t("dashboard.createClass")} icon={faPlus} />
+              <QuickAction to="/admin/timetable" label={t("dashboard.manageTimetable")} icon={faTableList} />
+            </div>
           </section>
         </div>
+
+        <section className="rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
+          <div className="mb-1 flex items-center gap-2.5">
+            <span className="grid size-9 place-items-center rounded-xl bg-brand-soft text-brand"><FontAwesomeIcon icon={faClipboardCheck} /></span>
+            <h3 className="m-0 text-base font-semibold tracking-tight text-primary">{t("dashboard.recentActivity")}</h3>
+          </div>
+          <p className="mb-0 mt-2 text-sm text-secondary">{t("dashboard.recentActivityEmpty")}</p>
+        </section>
+        </>
       ) : (
         <section className="rounded-2xl border border-border bg-surface p-4 shadow-card max-[600px]:p-3.5">
           <PanelHeading eyebrow={t("dashboard.yourTeaching")} title={t("dashboard.myClasses")} badge={t("dashboard.assigned", { count: data.my_classes.length })} />
@@ -179,6 +236,19 @@ export default function DashboardPage() {
   );
 }
 
+function TrendLegend({ color, label }: { color: string; label: string }) {
+  return <span className="inline-flex items-center gap-2"><span className={`size-2.5 rounded-full ${color}`} />{label}</span>;
+}
+
+function QuickAction({ to, label, icon }: { to: string; label: string; icon: IconDefinition }) {
+  return (
+    <Link to={to} className="flex min-h-10 items-center justify-between gap-3 py-2.5 text-sm text-primary no-underline transition hover:text-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+      <span className="flex items-center gap-2.5"><FontAwesomeIcon icon={icon} className="w-4 text-brand" />{label}</span>
+      <FontAwesomeIcon icon={faChevronRight} className="text-xs text-muted" />
+    </Link>
+  );
+}
+
 function PanelHeading({ eyebrow, title, badge }: { eyebrow: string; title: string; badge: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -192,20 +262,18 @@ function PanelHeading({ eyebrow, title, badge }: { eyebrow: string; title: strin
 }
 
 function MetricCard({ metric }: { metric: Metric }) {
-  const { t } = useI18n();
   return (
     <article className="min-w-0 rounded-2xl border border-border bg-surface p-3.5 shadow-card max-[600px]:rounded-[14px] max-[600px]:p-3">
-      <div className="flex items-center justify-between">
+      <div>
         <span className={`grid size-[34px] place-items-center rounded-xl text-sm max-[600px]:size-8 ${metricToneClasses[metric.tone]}`}>
           <FontAwesomeIcon icon={metric.icon} />
         </span>
-        <span className={`grid size-[23px] place-items-center rounded-full text-[13px] ${metricToneClasses[metric.tone]}`} aria-label={t("dashboard.currentTotal")}>↗</span>
       </div>
-      <p className="mb-1 mt-3 text-xs font-semibold text-secondary max-[600px]:mt-2.5">{metric.label}</p>
-      <strong className="block text-[26px] font-bold leading-[1.15] tracking-tight text-primary max-[600px]:text-[23px]">
+      <strong className="mb-1 mt-3 block text-[26px] font-bold leading-[1.15] tracking-tight text-primary max-[600px]:text-[23px]">
         {metric.value.toLocaleString()}
       </strong>
-      <p className="mb-0 mt-1 text-[11px] text-muted max-[600px]:min-h-6 max-[600px]:text-[10px]">{metric.caption}</p>
+      <p className="mb-0 text-[11px] text-secondary max-[600px]:text-[10px]">{metric.label}</p>
+      {metric.caption && <p className="mb-0 mt-1 text-[10px] text-muted">{metric.caption}</p>}
     </article>
   );
 }
