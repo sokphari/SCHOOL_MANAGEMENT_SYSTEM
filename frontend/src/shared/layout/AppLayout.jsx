@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRightFromBracket, faBars, faChevronDown, faMoon, faSun, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRightFromBracket, faBars, faChevronDown, faChevronLeft, faChevronRight, faCompress, faExpand, faMoon, faSun, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import NotificationBell from "@/modules/student-requests/components/NotificationBell";
 import Sidebar from "@/shared/layout/Sidebar";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import LanguageSwitcher from "@/shared/i18n/LanguageSwitcher";
+import NoticeViewport from "@/shared/feedback/NoticeViewport";
 
 const THEME_STORAGE_KEY = "school-management-theme";
+const SIDEBAR_STORAGE_KEY = "school-management-sidebar-collapsed";
 
 function getInitialTheme() {
   return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
@@ -19,7 +21,10 @@ export default function AppLayout() {
   const { language, t } = useI18n();
   const [theme, setTheme] = useState(getInitialTheme);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const shellRef = useRef(null);
   const profileMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
   const initials = user?.name
@@ -33,6 +38,30 @@ export default function AppLayout() {
   useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const handleFullscreenShortcut = (event) => {
+      if (event.key !== "F11" || event.defaultPrevented) return;
+      event.preventDefault();
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      } else {
+        shellRef.current?.requestFullscreen().catch(() => {});
+      }
+    };
+
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    window.addEventListener("keydown", handleFullscreenShortcut);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      window.removeEventListener("keydown", handleFullscreenShortcut);
+    };
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!profileOpen) return undefined;
@@ -59,9 +88,21 @@ export default function AppLayout() {
     setTheme((currentTheme) => currentTheme === "light" ? "dark" : "light");
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await shellRef.current?.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen can be denied by browser settings or an embedded context.
+    }
+  };
+
   return (
-    <div className="admin-shell min-h-screen bg-app-bg text-primary transition-colors duration-200" data-theme={theme}>
-      <Sidebar isOpen={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
+    <div ref={shellRef} className="admin-shell min-h-screen bg-app-bg text-primary transition-colors duration-200" data-theme={theme}>
+      <Sidebar isOpen={sidebarOpen} isCollapsed={sidebarCollapsed} onNavigate={() => setSidebarOpen(false)} />
 
       {sidebarOpen && (
         <button
@@ -72,7 +113,7 @@ export default function AppLayout() {
         />
       )}
 
-      <div className="flex min-h-screen min-w-0 flex-col lg:ml-[288px]">
+      <div className={`flex min-h-screen min-w-0 flex-col transition-[margin] duration-200 ${sidebarCollapsed ? "lg:ml-[76px]" : "lg:ml-[288px]"}`}>
         <header className="sticky top-0 z-20 flex min-h-[82px] items-center justify-between gap-5 border-b border-border bg-surface px-[clamp(18px,2.3vw,32px)] py-3 max-[560px]:min-h-[72px] max-[560px]:gap-2 max-[560px]:px-3.5 max-[560px]:py-2.5">
           <div className="flex items-center gap-3">
             <button
@@ -82,6 +123,16 @@ export default function AppLayout() {
               onClick={() => setSidebarOpen((isOpen) => !isOpen)}
             >
               <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
+            </button>
+            <button
+              className="hidden size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong lg:grid"
+              type="button"
+              aria-label={t(sidebarCollapsed ? "app.expandSidebar" : "app.collapseSidebar")}
+              title={t(sidebarCollapsed ? "app.expandSidebar" : "app.collapseSidebar")}
+              aria-expanded={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            >
+              <FontAwesomeIcon icon={sidebarCollapsed ? faChevronRight : faChevronLeft} />
             </button>
             <div>
               <p className="mb-1 text-[9px] font-bold tracking-[1.35px] text-brand max-[560px]:hidden">{t("app.schoolManagement")}</p>
@@ -104,6 +155,15 @@ export default function AppLayout() {
             </span>
             {user?.role === "admin" && <NotificationBell />}
             <LanguageSwitcher />
+            <button
+              className="grid size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong max-[560px]:size-[35px]"
+              type="button"
+              aria-label={t(isFullscreen ? "app.exitFullscreen" : "app.enterFullscreen")}
+              title={`${t(isFullscreen ? "app.exitFullscreen" : "app.enterFullscreen")} (F11)`}
+              onClick={toggleFullscreen}
+            >
+              <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} />
+            </button>
             <button
               className="grid size-[38px] shrink-0 place-items-center rounded-xl border border-border bg-surface text-secondary transition hover:border-transparent hover:bg-brand-soft hover:text-brand-strong max-[560px]:size-[35px]"
               type="button"
@@ -156,6 +216,7 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <NoticeViewport />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { faArrowLeft, faAward, faFloppyDisk } from "@fortawesome/free-solid-svg-
 import { getClass } from "@/modules/classes/api/classApi";
 import { createGradeTerm } from "@/modules/grades/api/gradeApi";
 import type { ClassDetails } from "@/modules/classes/api/classApi";
+import { notify } from "@/shared/feedback/notify";
 
 export default function GradeTermCreatePage() {
   const { classId = "" } = useParams();
@@ -25,6 +26,7 @@ export default function GradeTermCreatePage() {
     setSaving(true);
     try {
       const response = await createGradeTerm(Number(classId), form);
+      notify("Grading term created successfully.");
       navigate(`/admin/grades/terms/${response.data.data.id}`);
     } catch (requestError: unknown) {
       const message = (requestError as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data;

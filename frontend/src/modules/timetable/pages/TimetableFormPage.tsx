@@ -15,6 +15,7 @@ import type {
   TimetablePayload,
   TimetableSession,
 } from "@/modules/timetable/types/timetable";
+import { notify } from "@/shared/feedback/notify";
 
 const weekdays = [
   "Monday",
@@ -136,6 +137,7 @@ export default function TimetableFormPage() {
       } else {
         await createTimetableSession(payload);
       }
+      notify(editing ? "Timetable session updated." : "Timetable session created.");
       navigate("/admin/timetable");
     } catch (requestError) {
       if (axios.isAxiosError(requestError)) {

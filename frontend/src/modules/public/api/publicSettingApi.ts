@@ -7,6 +7,7 @@ export interface PublicSchoolSettings {
   school_address: string;
   logo_url: string;
   banner_url: string;
+  carousel_images: string[];
 }
 
 export const getPublicSettings = () => api.get<PublicSchoolSettings>("/public/settings");

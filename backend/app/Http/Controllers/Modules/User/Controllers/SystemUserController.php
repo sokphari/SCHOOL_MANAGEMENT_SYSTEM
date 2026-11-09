@@ -50,7 +50,16 @@ class SystemUserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['required', Rule::in(['admin', 'teacher'])],
         ]);
+
+        if ((int) $request->user()->id === (int) $user->id && $data['role'] !== $user->role) {
+            return response()->json(['message' => 'You cannot change your own account role.'], 422);
+        }
+
+        if ($user->role === 'admin' && $data['role'] === 'teacher' && $user->is_active && $this->activeAdminCountExcept($user) === 0) {
+            return response()->json(['message' => 'At least one active admin account must remain.'], 422);
+        }
 
         $user->update($data);
 

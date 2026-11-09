@@ -7,6 +7,7 @@ import { getTeacher, updateTeacher } from "@/modules/teachers/api/teacherApi.ts"
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { Teacher, TeacherForm, TeacherPayload, TeacherValidationErrors } from "@/modules/teachers/types/teacher";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 
@@ -54,13 +55,13 @@ export default function TeacherEditPage() {
     };
     try {
       await updateTeacher(id, payload);
-      alert("Teacher updated successfully");
+      notify("Teacher updated successfully.");
       navigate("/admin/teachers");
     } catch (error: unknown) {
       if (axios.isAxiosError<{ errors?: TeacherValidationErrors }>(error) && error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
       } else {
-        alert("Failed to update teacher");
+        notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not update this teacher." : "Could not update this teacher.", "error");
       }
     } finally {
       setSaving(false);

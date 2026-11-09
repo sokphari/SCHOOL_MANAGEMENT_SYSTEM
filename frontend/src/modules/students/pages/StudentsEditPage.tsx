@@ -7,6 +7,7 @@ import { getStudent, updateStudent } from "@/modules/students/api/studentApi.ts"
 import AppInput from "@/shared/components/AppInput.tsx";
 import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { Student, StudentForm, StudentValidationErrors } from "@/modules/students/types/student";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 
@@ -49,13 +50,13 @@ export default function StudentEditPage() {
     setErrors({});
     try {
       await updateStudent(id, { ...form, gender: form.gender || null });
-      alert("Student updated successfully");
+      notify("Student updated successfully.");
       navigate(`/admin/students/${id}`);
     } catch (error: unknown) {
       if (axios.isAxiosError<{ errors?: StudentValidationErrors }>(error) && error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
       } else {
-        alert("Failed to update student");
+        notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not update this student." : "Could not update this student.", "error");
       }
     } finally {
       setSaving(false);

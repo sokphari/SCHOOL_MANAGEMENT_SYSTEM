@@ -9,6 +9,7 @@ import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { TeacherForm, TeacherPayload, TeacherValidationErrors } from "@/modules/teachers/types/teacher";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 const initialForm: TeacherForm = {
@@ -39,13 +40,13 @@ export default function TeacherCreatePage() {
     };
     try {
       await createTeacher(payload);
-      alert("Teacher created successfully");
+      notify("Teacher created successfully.");
       navigate("/admin/teachers");
     } catch (error: unknown) {
       if (axios.isAxiosError<{ errors?: TeacherValidationErrors }>(error) && error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
       } else {
-        alert("Failed to create teacher");
+        notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not create this teacher." : "Could not create this teacher.", "error");
       }
     } finally {
       setSaving(false);

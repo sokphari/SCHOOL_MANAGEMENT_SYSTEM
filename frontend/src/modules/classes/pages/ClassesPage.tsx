@@ -28,6 +28,7 @@ import type { AppTableColumn } from "@/shared/components/AppTable.tsx";
 import type { ClassFilters, SchoolClass } from "@/modules/classes/types/class";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 const PAGE_SIZE = 8;
 
@@ -94,7 +95,7 @@ export default function ClassesPage() {
       });
     } catch (error) {
       console.error(error);
-      alert("Failed to load classes");
+      notify("Could not load classes. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -124,6 +125,7 @@ export default function ClassesPage() {
     setLifecycleError("");
     try {
       await scheduleClassEnd(endingClass.id, { end_date: endDate });
+      notify(`${endingClass.name} end date saved.`);
       setEndingClass(null);
       await fetchClasses(filters);
     } catch (error) {
@@ -139,10 +141,11 @@ export default function ClassesPage() {
     setBusyClassId(classItem.id);
     try {
       await preEndClass(classItem.id);
+      notify(`${classItem.name} is now pre-ended.`);
       await fetchClasses(filters);
     } catch (error) {
       console.error(error);
-      alert("Could not pre-end this class.");
+      notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not pre-end this class." : "Could not pre-end this class.", "error");
     } finally {
       setBusyClassId(null);
     }
@@ -153,10 +156,11 @@ export default function ClassesPage() {
     setBusyClassId(classItem.id);
     try {
       await resumeClass(classItem.id);
+      notify(`${classItem.name} is active again.`);
       await fetchClasses(filters);
     } catch (error) {
       console.error(error);
-      alert("Could not resume this class.");
+      notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not resume this class." : "Could not resume this class.", "error");
     } finally {
       setBusyClassId(null);
     }
@@ -203,6 +207,7 @@ export default function ClassesPage() {
     setAssigningStudent(true);
     try {
       await assignStudentToClass(addingToClass.id, matches[0].id);
+      notify("Student added to the class.");
       setAddingToClass(null);
       await fetchClasses(filters);
     } catch (error) {

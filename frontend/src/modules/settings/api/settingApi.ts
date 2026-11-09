@@ -8,6 +8,7 @@ export interface SchoolSettings {
   telegram_chat_id: string;
   logo_url: string;
   banner_url: string;
+  carousel_images: string;
 }
 
 export type SchoolSettingsErrors = Partial<Record<keyof SchoolSettings, string[]>>;

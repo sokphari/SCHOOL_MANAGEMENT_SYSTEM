@@ -15,6 +15,7 @@ import type { BuildingLocation } from "@/modules/locations/types/location";
 import type { Course } from "@/modules/courses/types/course";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 
@@ -135,11 +136,11 @@ export default function ClassCreatePage() {
         teacher_id: form.teacher_id ? Number(form.teacher_id) : null,
       };
       await createClass(payload);
-      alert("Class created successfully");
+      notify("Class created successfully.");
       navigate("/admin/classes");
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) setErrors(error.response.data.errors || {});
-      else alert("Failed to create class");
+      else notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not create this class." : "Could not create this class.", "error");
     } finally {
       setLoading(false);
     }

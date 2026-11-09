@@ -5,6 +5,7 @@ import { faArrowLeft, faFloppyDisk, faUsers } from "@fortawesome/free-solid-svg-
 import { getGradeTerm, saveStudentTermScore } from "@/modules/grades/api/gradeApi";
 import type { GradeTermDetails, StudentTermScore } from "@/modules/grades/types/grade";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { notify } from "@/shared/feedback/notify";
 
 type ManualScore = { activity_score: string; exam_score: string };
 
@@ -55,6 +56,7 @@ export default function GradeTermPage() {
         exam_score: exam === "" ? null : Number(exam),
       });
       setMessage(`Scores saved for ${student.name}.`);
+      notify(`Scores saved for ${student.name}.`);
       await load();
     } catch (requestError: unknown) {
       const response = (requestError as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data;

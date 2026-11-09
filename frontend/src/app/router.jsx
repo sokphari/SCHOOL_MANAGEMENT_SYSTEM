@@ -20,6 +20,7 @@ import StudentRequestScanPage from "@/modules/public/pages/StudentRequestScanPag
 import StudentRequestsPage from "@/modules/student-requests/pages/StudentRequestsPage.tsx";
 import StudentRequestDetailPage from "@/modules/student-requests/pages/StudentRequestsDetailPage.tsx";
 import SettingsPage from "@/modules/settings/pages/SettingsPage.tsx";
+import ProfilePage from "@/modules/profile/pages/ProfilePage.tsx";
 import HomePage from "@/modules/public/pages/HomePage.tsx";
 import FacilitiesPage from "@/modules/facilities/pages/FacilitiesPage.tsx";
 import FacilitiesFormPage from "@/modules/facilities/pages/FacilitiesFormPage.tsx";
@@ -41,20 +42,17 @@ import SystemUserEditPage from "@/modules/audit-logs/pages/SystemUserEditPage.ts
 import RolePermissionsPage from "@/modules/audit-logs/pages/RolePermissionsPage.tsx";
 import StudentRegistrationPage from "@/modules/public/pages/StudentRegistrationPage.tsx";
 import StudentRegistrationsPage from "@/modules/students/pages/StudentRegistrationsPage.tsx";
+import PublicSiteLayout from "@/modules/public/components/PublicSiteLayout.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
-  },
-
-  {
-    path: "/request-scan",
-    element: <StudentRequestScanPage />,
-  },
-  {
-    path: "/student-registration",
-    element: <StudentRegistrationPage />,
+    element: <PublicSiteLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "request-scan", element: <StudentRequestScanPage /> },
+      { path: "student-registration", element: <StudentRegistrationPage /> },
+    ],
   },
   {
     path: "/admin/login",
@@ -305,6 +303,14 @@ const router = createBrowserRouter([
         element: (
           <RoleRoute roles={["admin"]}>
             <SettingsPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <RoleRoute roles={["admin", "teacher"]}>
+            <ProfilePage />
           </RoleRoute>
         ),
       },

@@ -92,7 +92,7 @@ export function getSystemUser(id: number | string) {
   return api.get<SystemUserAccount>(`/system-users/${id}`);
 }
 
-export function updateSystemUser(id: number | string, data: { name: string; email: string }) {
+export function updateSystemUser(id: number | string, data: { name: string; email: string; role: "admin" | "teacher" }) {
   return api.put<{ message: string; user: SystemUserAccount }>(`/system-users/${id}`, data);
 }
 

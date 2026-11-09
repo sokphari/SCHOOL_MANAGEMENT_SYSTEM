@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faCalendarDays, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { createClassScheduleTemplate, getClassScheduleTemplates, updateClassScheduleTemplate } from "@/modules/classes/api/classApi";
 import type { ClassScheduleTemplate } from "@/modules/classes/types/class";
+import { notify } from "@/shared/feedback/notify";
 
 const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 type FormState = Omit<ClassScheduleTemplate, "id">;
@@ -38,6 +39,7 @@ export default function ScheduleTemplateFormPage() {
     try {
       if (editing && id) await updateClassScheduleTemplate(Number(id), form);
       else await createClassScheduleTemplate(form);
+      notify(editing ? "Schedule updated successfully." : "Schedule created successfully.");
       navigate("/admin/timetable/templates");
     } catch (requestError) {
       const response = (requestError as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data;

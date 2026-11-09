@@ -14,6 +14,7 @@ import ClassScheduleSelect from "@/modules/classes/components/ClassScheduleSelec
 import type { ClassForm, ClassPayload, ClassScheduleTemplate, ClassValidationErrors, TeacherOption } from "@/modules/classes/types/class";
 import type { BuildingLocation } from "@/modules/locations/types/location";
 import type { Course } from "@/modules/courses/types/course";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 
@@ -128,11 +129,11 @@ export default function ClassEditPage() {
     try {
       const payload: ClassPayload = { ...form, course_id: Number(form.course_id), lesson_id: Number(form.lesson_id), building_id: Number(form.building_id), floor_id: Number(form.floor_id), room_id: Number(form.room_id), teacher_id: form.teacher_id ? Number(form.teacher_id) : null };
       await updateClass(id, payload);
-      alert("Class updated successfully");
+      notify("Class updated successfully.");
       navigate(`/admin/classes/${id}`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 422) setErrors(error.response.data.errors || {});
-      else alert("Failed to update class");
+      else notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not update this class." : "Could not update this class.", "error");
     } finally {
       setSaving(false);
     }

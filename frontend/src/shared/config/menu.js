@@ -72,6 +72,12 @@ const menuItems = [
     section: "Administration",
     roles: ["admin"],
   },
+  {
+    label: "Profile",
+    path: "/admin/profile",
+    section: "Administration",
+    roles: ["admin", "teacher"],
+  },
 ];
 
 export default menuItems;

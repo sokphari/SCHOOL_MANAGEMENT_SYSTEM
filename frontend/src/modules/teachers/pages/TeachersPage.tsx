@@ -10,6 +10,7 @@ import AppPagination from "@/shared/components/AppPagination.tsx";
 import type { Teacher, TeacherFilters } from "@/modules/teachers/types/teacher";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 const PAGE_SIZE = 10;
 
@@ -45,7 +46,7 @@ export default function TeachersPage() {
       });
     } catch (error: unknown) {
       console.error(error);
-      alert("Failed to load teachers");
+      notify("Could not load teachers. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -67,10 +68,11 @@ export default function TeachersPage() {
     if (!window.confirm("Are you sure you want to delete this teacher?")) return;
     try {
       await deleteTeacher(id);
-      fetchTeachers(filters);
+      notify("Teacher deleted successfully.");
+      await fetchTeachers(filters);
     } catch (error: unknown) {
       console.error(error);
-      alert("Delete failed");
+      notify("Could not delete this teacher.", "error");
     }
   };
 

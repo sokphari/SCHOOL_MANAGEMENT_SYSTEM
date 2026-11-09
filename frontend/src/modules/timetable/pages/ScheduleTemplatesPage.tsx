@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClock, faPencil, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { deleteClassScheduleTemplate, getClassScheduleTemplates } from "@/modules/classes/api/classApi";
 import type { ClassScheduleTemplate } from "@/modules/classes/types/class";
+import { notify } from "@/shared/feedback/notify";
 
 const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -30,8 +31,10 @@ export default function ScheduleTemplatesPage() {
     try {
       await deleteClassScheduleTemplate(template.id);
       setTemplates((current) => current.filter((item) => item.id !== template.id));
+      notify("Schedule template deleted.");
     } catch {
       setError("Could not delete this schedule template.");
+      notify("Could not delete this schedule template.", "error");
     }
   };
 

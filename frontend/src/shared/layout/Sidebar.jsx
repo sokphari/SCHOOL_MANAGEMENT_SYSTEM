@@ -15,6 +15,7 @@ import {
   faGraduationCap,
   faInbox,
   faUserGraduate,
+  faCircleUser,
   faGaugeHigh,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
@@ -34,11 +35,12 @@ const menuIcons = {
   Requests: faInbox,
   "Audit log": faClockRotateLeft,
   Settings: faGear,
+  Profile: faCircleUser,
 };
 
 const expandableItems = new Set(["Students", "Teachers", "Classes", "Timetable", "Audit log"]);
 
-export default function Sidebar({ isOpen, onNavigate }) {
+export default function Sidebar({ isOpen, isCollapsed = false, onNavigate }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const location = useLocation();
@@ -111,21 +113,21 @@ export default function Sidebar({ isOpen, onNavigate }) {
   };
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[288px] -translate-x-full flex-col border-r border-white/10 bg-sidebar-bg px-4 pb-4 pt-5 text-sidebar-ink shadow-2xl transition-transform duration-200 lg:translate-x-0 ${isOpen ? "translate-x-0" : ""}`}>
-      <div className="mb-4 flex items-center gap-3 border-b border-white/10 px-2 pb-5">
+    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[288px] -translate-x-full flex-col border-r border-white/10 bg-sidebar-bg px-4 pb-4 pt-5 text-sidebar-ink shadow-2xl transition-[width,transform,padding] duration-200 lg:translate-x-0 ${isCollapsed ? "lg:w-[76px] lg:px-2" : ""} ${isOpen ? "translate-x-0" : ""}`}>
+      <div className={`mb-4 flex items-center gap-3 border-b border-white/10 px-2 pb-5 ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}>
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-300 to-violet-700 text-base text-white shadow-md shadow-violet-950/30">
           <FontAwesomeIcon icon={faGraduationCap} />
         </div>
-        <div className="min-w-0">
+        <div className={`min-w-0 ${isCollapsed ? "lg:hidden" : ""}`}>
           <p className="m-0 truncate text-[15px] font-bold tracking-tight">{t("app.schoolManagement")}</p>
           <p className="mt-0.5 text-[11px] text-sidebar-muted">{t(user?.role === "teacher" ? "app.teacherWorkspace" : "app.adminWorkspace")}</p>
         </div>
       </div>
 
-      <nav className="sidebar-scrollbar flex-1 space-y-5 overflow-y-auto pb-3" aria-label="Main navigation">
+      <nav className={`sidebar-scrollbar flex-1 space-y-5 overflow-y-auto pb-3 ${isCollapsed ? "lg:space-y-3" : ""}`} aria-label="Main navigation">
         {sections.map((section) => (
           <section key={section} aria-label={section}>
-            <p className="mb-2 ml-2 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-sidebar-muted">{t(`nav.section.${section}`)}</p>
+            <p className={`mb-2 ml-2 px-1 text-[10px] font-bold uppercase tracking-[0.09em] text-sidebar-muted ${isCollapsed ? "lg:hidden" : ""}`}>{t(`nav.section.${section}`)}</p>
             <div className="space-y-0.5">
               {filteredMenu.filter((item) => item.section === section).map((item) => {
                 const isExpandable = expandableItems.has(item.label);
@@ -137,28 +139,28 @@ export default function Sidebar({ isOpen, onNavigate }) {
                   const submenuId = `${item.label.toLowerCase().replaceAll(" ", "-")}-submenu`;
                   return (
                     <div key={item.path}>
-                      <div className={`group relative flex min-h-10 items-center rounded-lg border px-1 py-0.5 text-sm font-medium transition ${isActiveGroup ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}>
+                      <div title={isCollapsed ? t(`nav.${item.label}`) : undefined} className={`group relative flex min-h-10 items-center rounded-lg border px-1 py-0.5 text-sm font-medium transition ${isCollapsed ? "lg:justify-center lg:px-0" : ""} ${isActiveGroup ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}>
                         {isActiveGroup && <span className="absolute bottom-2 left-[-17px] top-2 w-[3px] rounded-r bg-violet-300" />}
-                        <NavLink to={item.path} onClick={onNavigate} className="flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-md px-2.5 text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                        <NavLink to={item.path} onClick={onNavigate} className={`flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-md px-2.5 text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}>
                           <span className="grid w-5 shrink-0 place-items-center text-sm text-violet-200/80"><FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} /></span>
-                          <span className="truncate">{t(`nav.${item.label}`)}</span>
+                          <span className={`truncate ${isCollapsed ? "lg:hidden" : ""}`}>{t(`nav.${item.label}`)}</span>
                         </NavLink>
-                        <button type="button" aria-label={t(expanded ? "nav.collapse" : "nav.expand", { item: t(`nav.${item.label}`) })} aria-expanded={expanded} aria-controls={submenuId} onClick={() => toggleGroup(group, expanded)} className="grid size-8 shrink-0 place-items-center rounded-md border-0 bg-transparent text-sidebar-muted transition hover:bg-white/10 hover:text-sidebar-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                        <button type="button" aria-label={t(expanded ? "nav.collapse" : "nav.expand", { item: t(`nav.${item.label}`) })} aria-expanded={expanded} aria-controls={submenuId} onClick={() => toggleGroup(group, expanded)} className={`grid size-8 shrink-0 place-items-center rounded-md border-0 bg-transparent text-sidebar-muted transition hover:bg-white/10 hover:text-sidebar-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${isCollapsed ? "lg:hidden" : ""}`}>
                           <FontAwesomeIcon className={`text-[9px] transition-transform ${expanded ? "rotate-180" : ""}`} icon={faChevronDown} />
                         </button>
                       </div>
-                      {renderSubmenu(item, group)}
+                      <div className={isCollapsed ? "lg:hidden" : ""}>{renderSubmenu(item, group)}</div>
                     </div>
                   );
                 }
 
                 return (
-                  <NavLink key={item.path} to={item.path} onClick={onNavigate} className={({ isActive }) => `group relative flex min-h-10 items-center gap-3 rounded-lg border px-3.5 text-sm font-medium no-underline transition ${isActive ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}>
+                  <NavLink key={item.path} title={isCollapsed ? t(`nav.${item.label}`) : undefined} to={item.path} onClick={onNavigate} className={({ isActive }) => `group relative flex min-h-10 items-center gap-3 rounded-lg border px-3.5 text-sm font-medium no-underline transition ${isCollapsed ? "lg:justify-center lg:px-0" : ""} ${isActive ? "border-violet-200/20 bg-sidebar-active text-white" : "border-transparent text-sidebar-muted hover:bg-white/[0.065] hover:text-sidebar-ink"}`}>
                     {({ isActive }) => (
                       <>
                         {isActive && <span className="absolute bottom-2 left-[-17px] top-2 w-[3px] rounded-r bg-violet-300" />}
                         <span className={`grid w-5 place-items-center text-sm ${isActive ? "text-violet-200" : "text-violet-200/70"}`}><FontAwesomeIcon icon={menuIcons[item.label] || faGraduationCap} /></span>
-                        <span>{t(`nav.${item.label}`)}</span>
+                        <span className={isCollapsed ? "lg:hidden" : ""}>{t(`nav.${item.label}`)}</span>
                       </>
                     )}
                   </NavLink>

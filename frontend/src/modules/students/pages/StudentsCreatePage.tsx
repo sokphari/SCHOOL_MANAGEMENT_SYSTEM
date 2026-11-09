@@ -9,6 +9,7 @@ import AppSelect from "@/shared/components/AppSelect.tsx";
 import type { StudentForm, StudentValidationErrors } from "@/modules/students/types/student";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 const fieldClass = "mb-0";
 
@@ -35,13 +36,13 @@ export default function StudentCreatePage() {
     setErrors({});
     try {
       await createStudent({ ...form, gender: form.gender || null });
-      alert("Student created successfully");
+      notify("Student created successfully.");
       navigate("/admin/students");
     } catch (error: unknown) {
       if (axios.isAxiosError<{ errors?: StudentValidationErrors }>(error) && error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
       } else {
-        alert("Something went wrong");
+        notify(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Could not create this student." : "Could not create this student.", "error");
       }
     } finally {
       setLoading(false);

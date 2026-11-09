@@ -14,6 +14,7 @@ import type { SchoolClass } from "@/modules/classes/types/class";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { useI18n } from "@/shared/i18n/I18nProvider";
 import { translateUiText } from "@/shared/i18n/translateUiText";
+import { notify } from "@/shared/feedback/notify";
 
 type ClassAttendanceStatus = "present" | "absent" | "late" | "excused";
 function isClassAttendanceClosed(schoolClass: ClassDetails | null) {
@@ -110,9 +111,10 @@ export default function ClassDetailPage() {
     try {
       await removeStudentFromClass(id, studentId);
       await fetchClass();
+      notify("Student removed from this class.");
     } catch (requestError) {
       console.error(requestError);
-      alert("Failed to remove student from class");
+      notify(axios.isAxiosError<{ message?: string }>(requestError) ? requestError.response?.data?.message || "Could not remove this student from the class." : "Could not remove this student from the class.", "error");
     }
   };
 
@@ -187,11 +189,11 @@ export default function ClassDetailPage() {
       setAttendanceDirty(false);
       setHasSavedAttendance(true);
       setTrackingAttendance(false);
-      alert("Attendance saved successfully");
+      notify("Attendance saved successfully.");
     } catch (attendanceError) {
       console.error(attendanceError);
       const message = axios.isAxiosError(attendanceError) ? attendanceError.response?.data?.message : undefined;
-      alert(message || "Failed to save attendance. Please try again.");
+      notify(message || "Could not save attendance. Please try again.", "error");
     } finally {
       setSavingAttendance(false);
     }

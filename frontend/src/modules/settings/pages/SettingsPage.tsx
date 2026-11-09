@@ -12,6 +12,7 @@ const emptySettings: SchoolSettings = {
   telegram_chat_id: "",
   logo_url: "",
   banner_url: "",
+  carousel_images: "",
 };
 
 function getErrorMessage(error: unknown) {
@@ -161,6 +162,19 @@ export default function SettingsPage() {
               <SettingsField name="banner_url" label="Banner image URL" icon={faImage} type="url" value={form.banner_url} onChange={handleChange} error={errors.banner_url?.[0]} placeholder="https://example.com/banner.jpg" />
               {form.banner_url && <div className="overflow-hidden rounded-lg border border-border bg-surface"><img key={form.banner_url} src={form.banner_url} alt="School banner preview" className="h-24 w-full object-cover" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} /></div>}
             </div>
+          </div>
+          <div className="mt-4 rounded-xl border border-border bg-app-bg/40 p-3 sm:p-4">
+            <label htmlFor="carousel_images" className="mb-1.5 block text-[13px] font-semibold text-secondary"><FontAwesomeIcon icon={faImage} className="mr-2 text-brand" />Carousel image URLs</label>
+            <textarea id="carousel_images" name="carousel_images" rows={6} value={form.carousel_images} onChange={(event) => handleChange("carousel_images", event.currentTarget.value)} placeholder={[
+              "https://picsum.photos/id/1011/800/1000",
+              "https://picsum.photos/id/1015/800/1000",
+              "https://picsum.photos/id/1016/800/1000",
+              "https://picsum.photos/id/1018/800/1000",
+              "https://picsum.photos/id/1020/800/1000",
+              "https://picsum.photos/id/1024/800/1000",
+            ].join("\n")} aria-invalid={Boolean(errors.carousel_images)} aria-describedby={errors.carousel_images ? "carousel_images-error" : "carousel-images-help"} className={`w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-primary outline-none transition placeholder:text-muted focus:ring-2 focus:ring-brand/15 ${errors.carousel_images ? "border-rose-500 focus:border-rose-500" : "border-border focus:border-brand"}`} />
+            <p id="carousel-images-help" className="mb-0 mt-1.5 text-xs text-muted">Add exactly 6 image URLs, one per line, for the automatic coverflow. For local photos, put files in frontend/public/images and enter paths like /images/school-photo.jpg. The banner image remains the fallback.</p>
+            {errors.carousel_images?.[0] && <p id="carousel_images-error" className="mb-0 mt-1.5 text-xs text-rose-600 dark:text-rose-300">{errors.carousel_images[0]}</p>}
           </div>
         </section>
 
